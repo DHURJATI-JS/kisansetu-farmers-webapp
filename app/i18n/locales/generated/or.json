@@ -6,5 +6,13 @@
  "nav.community": "ସାମୁଦାୟ",
  "nav.dashboard": "ଡାଶବୋର୍ଡ",
  "nav.farm_new": "ନୂଆ କ୍ଷେତ୍ର",
- "nav.farms": "କ୍ଷେତ୍ରଗୁଡ଼ିକ"
+ "nav.farms": "କ୍ଷେତ୍ରଗୁଡ଼ିକ",
+ "nav.home": "ଘର",
+ "nav.jobs": "କାମ",
+ "nav.language": "ଭାଷା",
+ "nav.login": "ଏକାଉଣ୍ଟ ପ୍ରବେଶ କରନ୍ତୁ",
+ "nav.logout": "ଏକାଉଣ୍ଟରୁ ବାହାରିବୁ",
+ "nav.me": "ମୁଁ",
+ "nav.notifications": "ଜାଣିପଣା",
+ "nav.open": "ଖୋଲନ୍ତୁ"
 }

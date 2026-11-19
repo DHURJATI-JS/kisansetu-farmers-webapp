@@ -6,5 +6,13 @@
  "nav.community": "समुदाय",
  "nav.dashboard": "नियंत्रण कक्ष",
  "nav.farm_new": "नया खेत",
- "nav.farms": "खेत"
+ "nav.farms": "खेत",
+ "nav.home": "मुखपृष्ठ",
+ "nav.jobs": "काम",
+ "nav.language": "भाषा",
+ "nav.login": "लॉग इन करा",
+ "nav.logout": "लॉग आउट करा",
+ "nav.me": "हम",
+ "nav.notifications": "सूचना",
+ "nav.open": "खोल"
 }

@@ -5,5 +5,13 @@
  "nav.cart": "44656820495b",
  "nav.dashboard": "d87f47b47e4d",
  "nav.farm_new": "423e76ef3e40",
- "nav.farms": "3cd5fc466d9d"
+ "nav.farms": "3cd5fc466d9d",
+ "nav.home": "70f8bb9a8a53",
+ "nav.jobs": "437736fdb5bb",
+ "nav.language": "89b86ab0e66f",
+ "nav.login": "f7c400ed695f",
+ "nav.logout": "6e78c91f5a05",
+ "nav.me": "94563ec383e2",
+ "nav.notifications": "753a22b2eb61",
+ "nav.open": "cf9b77061f7b"
 }

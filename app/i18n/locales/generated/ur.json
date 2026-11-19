@@ -6,5 +6,13 @@
  "nav.community": "جماعت",
  "nav.dashboard": "کنٹرول بورڈ",
  "nav.farm_new": "نیا فارم",
- "nav.farms": "فارم"
+ "nav.farms": "فارم",
+ "nav.home": "گھر",
+ "nav.jobs": "ملازمتیں",
+ "nav.language": "زبان",
+ "nav.login": "لاگ ان کریں",
+ "nav.logout": "لاگ آؤٹ کریں",
+ "nav.me": "میرے",
+ "nav.notifications": "نوٹس",
+ "nav.open": "کھولیں"
 }

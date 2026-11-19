@@ -5,5 +5,12 @@
  "nav.community": "സമൂഹം",
  "nav.dashboard": "ഡാഷ്‌ബോർഡ്",
  "nav.farm_new": "പുതിയ തോട്ടം",
- "nav.farms": "തോട്ടങ്ങൾ"
+ "nav.farms": "തോട്ടങ്ങൾ",
+ "nav.home": "ഹോം",
+ "nav.language": "ഭാഷ",
+ "nav.open": "തുടക്കുക",
+ "nav.policies": "വ്യവസ്ഥകളും നിയമങ്ങളും",
+ "nav.report": "പ്രശ്നം റിപ്പോർട്ട് ചെയ്യുക",
+ "nav.schemes": "സര്‍ക്കാര്‍ പദ്ധതികൾ",
+ "nav.shop": "കൃഷി ഷോപ്പ്"
 }

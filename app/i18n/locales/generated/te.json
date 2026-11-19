@@ -6,5 +6,13 @@
  "nav.community": "సమాజం",
  "nav.dashboard": "నివేదికల బోర్డు",
  "nav.farm_new": "కొత్త పొలం",
- "nav.farms": "పొలాలు"
+ "nav.farms": "పొలాలు",
+ "nav.home": "ఇల్లు",
+ "nav.jobs": "ఉద్యోగాలు",
+ "nav.language": "భాష",
+ "nav.login": "లాగిన్ అవ్వండి",
+ "nav.logout": "లాగ్ అవుట్ అవ్వండి",
+ "nav.me": "నేను",
+ "nav.notifications": "నోటిఫికేషన్లు",
+ "nav.open": "తెరవండి"
 }

@@ -6,5 +6,13 @@
  "nav.community": "સમુદાય",
  "nav.dashboard": "ડેશબોર્ડ",
  "nav.farm_new": "નવું ખેતર",
- "nav.farms": "ખેતરો"
+ "nav.farms": "ખેતરો",
+ "nav.home": "ઘર",
+ "nav.jobs": "કામ",
+ "nav.language": "ભાષા",
+ "nav.login": "લોગ ઇન કરો",
+ "nav.logout": "લોગ આઉટ કરો",
+ "nav.me": "હું",
+ "nav.notifications": "સૂચનાઓ",
+ "nav.open": "ખોલો"
 }

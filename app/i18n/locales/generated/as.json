@@ -5,5 +5,13 @@
  "nav.cart": "বাসকীত",
  "nav.dashboard": "ড্যাশব’ড",
  "nav.farm_new": "নতুন পথাৰ",
- "nav.farms": "পথাৰসমূহ"
+ "nav.farms": "পথাৰসমূহ",
+ "nav.home": "ৰং",
+ "nav.jobs": "কামত",
+ "nav.language": "ভাষা",
+ "nav.login": "লগ ইন কৰক",
+ "nav.logout": "লগ আউট",
+ "nav.me": "মই",
+ "nav.notifications": "নৱীন খবৰ",
+ "nav.open": "খোলা"
 }
