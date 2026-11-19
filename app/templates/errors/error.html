@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+{% block title %}{{ status }}{% endblock %}
+{% block content %}
+<section class="ks-panel ornate max-w-lg mx-auto text-center mt-10">
+  <div class="ks-title ks-h1">{{ status }}</div>
+  <p class="text-lg">{{ message }}</p>
+  <div class="ks-row justify-center"><a class="ks-btn" href="/">{{ t('nav.home') }}</a>{% if not user %}<a class="ks-btn ks-btn-ghost" href="/login">{{ t('nav.login') }}</a>{% endif %}</div>
+</section>
+{% endblock %}

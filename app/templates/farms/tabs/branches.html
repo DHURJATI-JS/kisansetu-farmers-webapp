@@ -1,0 +1,71 @@
+<datalist id="crop-names">{% for c in crop_list %}<option value="{{ c.name }}">{{ c.hi }}</option>{% endfor %}</datalist>
+<div class="ks-stack">
+{% for b in branches %}
+<section class="ks-panel ornate" id="b-{{ b.id }}">{{ m.corners() }}
+  <div class="ks-between">
+    <h2 class="ks-title ks-h3 m-0">{{ b.name }}{% if b.is_main %} <span class="ks-badge gold">{{ t('farm.main') }}</span>{% endif %}</h2>
+    <div class="ks-row">{{ m.status_badge(t, b.status) }}{% if b.hiring_open %}<span class="ks-badge">{{ t('farm.hiring_open') }}</span>{% else %}<span class="ks-badge warn">{{ t('farm.hiring_closed') }}</span>{% endif %}</div>
+  </div>
+  <p class="ks-small ks-muted">{{ [b.address, b.city, b.district, b.state]|select|join(', ') }} · {{ b.lat|round(4) }}, {{ b.lon|round(4) }}{% if b.area_acres %} · {{ b.area_acres }} {{ t('unit.acres') }}{% endif %}</p>
+  <p class="ks-small">{{ t('field.work_hours') }}: {{ b.work_start.strftime('%H:%M') }}–{{ b.work_end.strftime('%H:%M') }} · {{ t('field.weekly_offs') }}: {% for d in b.weekly_offs %}{{ t(['day.mon','day.tue','day.wed','day.thu','day.fri','day.sat','day.sun'][d]) }}{{ ', ' if not loop.last }}{% endfor %}</p>
+  {% if b.closure_date %}<div class="ks-alert warn"><i data-lucide="calendar-x"></i><div>{{ t('farm.branch_closing', date=b.closure_date|d) }}</div></div>{% endif %}
+
+  <h3 class="ks-h3 mt-3">{{ t('farm.crops') }}</h3>
+  <div class="ks-row">
+    {% for c in crops[b.id] %}
+    <span class="ks-chip"><i data-lucide="sprout"></i>{{ c.name }}{% if c.variety %} ({{ c.variety }}){% endif %}
+      {% if perms.crops and crops[b.id]|length > 1 %}
+      <button type="button" class="ks-icon-btn" data-action="crop.remove" data-payload='{{ {"crop_id": c.id|string, "mode": "harvested"}|tojson }}' aria-label="{{ t('farm.mark_harvested') }}" title="{{ t('farm.mark_harvested') }}"><i data-lucide="wheat"></i></button>
+      <button type="button" class="ks-icon-btn" data-action="crop.remove" data-payload='{{ {"crop_id": c.id|string, "mode": "removed"}|tojson }}' aria-label="{{ t('common.remove') }}"><i data-lucide="x"></i></button>
+      {% endif %}</span>
+    {% endfor %}
+  </div>
+  {% if perms.crops and b.status != 'closed' %}
+  <form class="ks-row mt-2 items-end" data-action-form="crop.add" data-payload='{{ {"branch_id": b.id|string}|tojson }}'>
+    <div class="ks-field m-0"><label class="ks-label" for="crop-{{ b.id }}">{{ t('farm.planted_crop') }}</label><input id="crop-{{ b.id }}" class="ks-input" name="crop" list="crop-names" required maxlength="80"></div>
+    <div class="ks-field m-0"><label class="ks-label" for="pl-{{ b.id }}">{{ t('field.planted_on') }}</label><input id="pl-{{ b.id }}" class="ks-input" type="date" name="planted_on" data-optional></div>
+    <button class="ks-btn ks-btn-sm" type="submit"><i data-lucide="plus"></i>{{ t('farm.add_crop') }}</button>
+  </form>
+  {% endif %}
+
+  {% if perms.members and b.status == 'active' %}
+  <details class="ks-card mt-3"><summary class="font-semibold">{{ t('farm.mark_day') }}</summary>
+    <p class="ks-small ks-muted">{{ t('farm.mark_day_help', pct=cfg.holiday_premium_pct) }}</p>
+    <form class="ks-row items-end" data-action-form="branch.mark_day" data-payload='{{ {"branch_id": b.id|string}|tojson }}'>
+      <div class="ks-field m-0"><label class="ks-label" for="day-{{ b.id }}">{{ t('field.date') }}</label><input id="day-{{ b.id }}" class="ks-input" type="date" name="day" required></div>
+      <label class="ks-check"><input type="radio" name="is_open" value="true" data-type="bool" checked><span>{{ t('farm.day_open') }}</span></label>
+      <label class="ks-check"><input type="radio" name="is_open" value="false" data-type="bool"><span>{{ t('farm.day_closed') }}</span></label>
+      <button class="ks-btn ks-btn-sm" type="submit">{{ t('common.save') }}</button>
+    </form>
+  </details>
+  <div class="ks-row mt-3">
+    <button class="ks-btn ks-btn-ghost ks-btn-sm" data-action="branch.update" data-payload='{{ {"branch_id": b.id|string, "hiring_open": not b.hiring_open}|tojson }}'><i data-lucide="user-plus"></i>{{ t('farm.toggle_hiring_off') if b.hiring_open else t('farm.toggle_hiring_on') }}</button>
+    {% if perms.emergency %}<button class="ks-btn ks-btn-danger ks-btn-sm" data-action="branch.emergency" data-payload='{{ {"branch_id": b.id|string, "kind": "other"}|tojson }}' data-prompt="js.prompt_emergency_note"><i data-lucide="siren"></i>{{ t('farm.branch_emergency') }}</button>
+    <button class="ks-btn ks-btn-sm" data-action="branch.resume" data-payload='{{ {"branch_id": b.id|string}|tojson }}'><i data-lucide="play"></i>{{ t('farm.resume') }}</button>{% endif %}
+    {% if perms.settings and not b.is_main %}<button class="ks-btn ks-btn-ghost ks-btn-sm" data-action="branch.close" data-payload='{{ {"branch_id": b.id|string}|tojson }}' data-prompt="js.prompt_reason" data-prompt-field="reason"><i data-lucide="calendar-x"></i>{{ t('farm.close_branch') }}</button>{% endif %}
+  </div>
+  {% endif %}
+</section>
+{% endfor %}
+
+{% if perms.settings and farm.status == 'active' %}
+<section class="ks-panel ornate">{{ m.corners() }}
+  <h2 class="ks-title ks-h3">{{ t('farm.new_branch') }}</h2>
+  <form id="branch-new" data-farm="{{ farm.id }}" novalidate>
+    {{ m.field('branch.name', t('field.branch_name'), required=True, attrs='maxlength="120"') }}
+    <div id="nb-map" class="ks-map" data-map-picker data-lat="#nb-lat" data-lon="#nb-lon" data-start-lat="{{ branches[0].lat if branches else 22.5 }}" data-start-lon="{{ branches[0].lon if branches else 79 }}"></div>
+    <button type="button" class="ks-btn ks-btn-ghost ks-btn-sm mt-2" data-map-locate="#nb-map"><i data-lucide="locate-fixed"></i>{{ t('farmnew.use_my_location') }}</button>
+    <input type="hidden" id="nb-lat" name="branch.lat" data-type="number"><input type="hidden" id="nb-lon" name="branch.lon" data-type="number">
+    <div class="ks-grid cols-2 mt-3">
+      {{ m.field('branch.address', t('field.address'), optional=True, attrs='maxlength="300"') }}
+      {{ m.field('branch.area_acres', t('field.area_acres'), type='number', dtype='number', optional=True, attrs='min="0" step="0.01"') }}
+      {{ m.field('branch.work_start', t('field.work_start'), type='time', value='08:00', required=True) }}
+      {{ m.field('branch.work_end', t('field.work_end'), type='time', value='16:00', required=True) }}
+    </div>
+    <fieldset class="ks-field"><legend class="ks-label">{{ t('field.weekly_offs') }}</legend><div class="ks-row">{% for d in range(7) %}<label class="ks-chip"><input type="checkbox" name="branch.weekly_offs" value="{{ d }}" data-type="intlist" {% if d == 6 %}checked{% endif %}>{{ t(['day.mon','day.tue','day.wed','day.thu','day.fri','day.sat','day.sun'][d]) }}</label>{% endfor %}</div></fieldset>
+    {{ m.field('first_crop', t('farm.first_crop'), required=True, attrs='list="crop-names" maxlength="80" data-skip') }}
+    <button type="submit" class="ks-btn ks-btn-gold"><i data-lucide="plus"></i>{{ t('farm.add_branch') }}</button>
+  </form>
+</section>
+{% endif %}
+</div>

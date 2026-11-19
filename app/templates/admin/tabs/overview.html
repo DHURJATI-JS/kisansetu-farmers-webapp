@@ -1,0 +1,33 @@
+<section class="ks-grid cols-3 mb-4">
+  {{ m.stat(t('admin.active_users'), counts[0], 'users') }}
+  {{ m.stat(t('admin.active_farms'), counts[1], 'tractor') }}
+  {{ m.stat(t('admin.pending_farms'), counts[2], 'hourglass') }}
+  {{ m.stat(t('admin.open_reports'), counts[3], 'megaphone') }}
+  {{ m.stat(t('admin.open_cases'), counts[4], 'scale') }}
+  {{ m.stat(t('admin.active_halts'), counts[5], 'octagon-pause') }}
+</section>
+<div class="ks-grid cols-2">
+  <section class="ks-panel ornate">{{ m.corners() }}
+    <h2 class="ks-title ks-h3">{{ t('admin.ai_providers') }}</h2>
+    <ul class="ks-list">{% for p in ai %}<li class="ks-between"><span><strong>{{ p.name }}</strong> · {{ p.model }}<div class="ks-small ks-muted">{{ p.last_error or '' }}</div></span>
+      <span>{% if p.available %}<span class="ks-badge">{{ t('admin.up') }}</span>{% else %}<span class="ks-badge danger">{{ t('admin.cooldown') }}</span>{% endif %}<span class="ks-small"> ✓{{ p.ok }} ✗{{ p.fail }}{% if p.latency_ms %} · {{ p.latency_ms }}ms{% endif %}</span></span></li>{% endfor %}</ul>
+    <p class="ks-small">{{ t('admin.queue', **queue) }} · Redis: <strong>{{ redis }}</strong></p>
+    <h3 class="ks-h3 mt-4">{{ t('admin.run_jobs') }}</h3>
+    <div class="ks-row">{% for j in ['farm_scan', 'payroll', 'surveys', 'closures', 'job_hunt', 'digest', 'purge', 'translations'] %}
+      <button class="ks-btn ks-btn-ghost ks-btn-sm" data-action="admin.run_job" data-payload='{{ {"job": j}|tojson }}' data-no-reload>{{ t('job.' ~ j) }}</button>{% endfor %}</div>
+  </section>
+  <section class="ks-panel ornate">{{ m.corners() }}
+    <h2 class="ks-title ks-h3">{{ t('admin.active_halts') }}</h2>
+    <ul class="ks-list">{% for h, fname in halts %}<li class="ks-between"><span><strong>{{ fname }}</strong> · {{ t('halt.reason.' ~ h.reason) }}<div class="ks-small ks-muted">{{ h.created_at|dt }}{% if h.details %} · {{ h.details|tojson|truncate(120) }}{% endif %}</div></span>
+      <button class="ks-btn ks-btn-ghost ks-btn-sm" data-action="admin.halt.lift" data-payload='{{ {"halt_id": h.id|string}|tojson }}' data-prompt="js.prompt_note">{{ t('admin.lift') }}</button></li>
+    {% else %}<li>{{ t('admin.none') }}</li>{% endfor %}</ul>
+  </section>
+  <section class="ks-panel">
+    <h2 class="ks-title ks-h3">{{ t('admin.job_runs') }}</h2>
+    <ul class="ks-list ks-small">{% for r in runs %}<li class="ks-between"><span>{{ r.job }} · {{ r.started_at|dt }}</span><span class="ks-badge {{ '' if r.ok else 'danger' }}">{{ (r.details or {})|tojson|truncate(80) }}</span></li>{% endfor %}</ul>
+  </section>
+  <section class="ks-panel">
+    <h2 class="ks-title ks-h3">{{ t('admin.translations') }}</h2>
+    <ul class="ks-list ks-small">{% for l, cov in coverage %}<li class="ks-between"><span>{{ l.native }} ({{ l.code }})</span><span class="ks-progress w-40" data-progress="{{ cov }}"><span></span></span><span>{{ cov }}%</span></li>{% endfor %}</ul>
+  </section>
+</div>

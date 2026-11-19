@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% import "partials/_macros.html" as m with context %}
+{% import "partials/_statement.html" as s with context %}
+{% block title %}{{ t('stmt.title') }}{% endblock %}
+{% block content %}
+<h1 class="ks-title ks-h1">{{ t('stmt.title') }}</h1>
+<p class="ks-muted">{{ t('stmt.lead') }}</p>
+{% if farms %}
+<nav class="ks-row mb-3" aria-label="{{ t('stmt.of') }}">
+  <a class="ks-chip no-underline" href="/account/statement?of=me" {% if of == 'me' %}aria-current="page"{% endif %}><i data-lucide="user-round"></i>{{ t('stmt.mine') }}</a>
+  {% for f in farms %}<a class="ks-chip no-underline" href="/account/statement?of={{ f.id }}" {% if of == f.id|string %}aria-current="page"{% endif %}><i data-lucide="tractor"></i>{{ f.name }}</a>{% endfor %}
+</nav>
+{% endif %}
+<section class="ks-panel ornate">{{ m.corners() }}
+  <div class="ks-between flex-wrap gap-2"><h2 class="ks-title ks-h3 m-0">{{ t('stmt.farm', farm=farm.name) if farm else t('stmt.mine') }}</h2>
+    {% if farm %}<a class="ks-btn ks-btn-ghost ks-btn-sm" href="/farms/{{ farm.id }}?tab=ledger"><i data-lucide="book-open"></i>{{ t('stmt.open_farm_ledger') }}</a>{% endif %}</div>
+  {{ s.statement_view(st, '/account/statement', {'of': of}, csv=csv, show_by=farm is not none) }}
+</section>
+{% endblock %}

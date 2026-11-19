@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% import "partials/_macros.html" as m with context %}
+{% block title %}{{ t('onboard.title') }}{% endblock %}
+{% block content %}
+<section class="ks-panel ornate max-w-2xl mx-auto mt-4">{{ m.corners() }}
+  <div class="ks-between"><h1 class="ks-title ks-h2 m-0">{{ t('onboard.title') }}</h1>
+    <button type="button" class="ks-btn ks-btn-ghost ks-btn-sm" data-speak="#ob-voice"><i data-lucide="volume-2"></i>{{ t('common.listen') }}</button></div>
+  <p class="ks-muted" id="ob-voice">{{ t('onboard.voice') }}</p>
+
+  <div class="ks-card mt-4">
+    <h2 class="ks-h3 flex items-center gap-2"><i data-lucide="camera"></i>{{ t('onboard.photo_title') }}</h2>
+    <p class="ks-small ks-muted">{{ t('onboard.photo_help') }}</p>
+    <div class="flex items-center gap-4 flex-wrap">
+      <img id="ob-preview" class="ks-avatar lg {{ '' if user.photo_path else 'ks-hidden' }}" src="{{ '/media/' ~ user.photo_path if user.photo_path else '' }}" alt="{{ t('onboard.photo_alt') }}">
+      <button type="button" class="ks-btn ks-btn-gold ks-btn-xl" data-camera="#ob-photo" data-facing="user"><i data-lucide="camera"></i>{{ t('camera.live') }}</button>
+      <label class="ks-btn ks-btn-ghost"><i data-lucide="upload"></i>{{ t('onboard.take_photo') }}<input id="ob-photo" type="file" accept="image/*" class="sr-only"></label>
+      {% if user.photo_verified %}<span class="ks-badge"><i data-lucide="badge-check"></i>{{ t('onboard.photo_ok') }}</span>{% endif %}
+    </div>
+    <div id="ob-photo-result" class="mt-2" role="status" aria-live="polite"></div>
+  </div>
+
+  <div class="ks-card mt-4">
+    <h2 class="ks-h3 flex items-center gap-2"><i data-lucide="map-pin"></i>{{ t('onboard.location_title') }}</h2>
+    <p class="ks-small ks-muted">{{ t('onboard.location_now', place=([user.city, user.district, user.state]|select|unique|join(', ')) or t('common.unknown')) }}
+      {% if user.lat is not none and not user.location_verified_at %}<span class="ks-badge info"><i data-lucide="keyboard"></i>{{ t('loc.typed_badge') }}</span>{% endif %}</p>
+    <div class="ks-row">
+      <button type="button" class="ks-btn ks-btn-ghost" id="ob-location"><i data-lucide="locate-fixed"></i>{{ t('onboard.update_location') }}</button>
+      <button type="button" class="ks-btn ks-btn-ghost" data-loc-typed-toggle="#ob-typed"><i data-lucide="keyboard"></i>{{ t('loc.type_instead') }}</button>
+    </div>
+    {{ m.typed_location('ob-typed') }}
+  </div>
+
+  <div class="ks-card mt-4">
+    <h2 class="ks-h3 flex items-center gap-2"><i data-lucide="route"></i>{{ t('onboard.next_title') }}</h2>
+    <div class="ks-row">
+      {% if user.role == 'farmer' %}<a class="ks-btn" href="/jobs"><i data-lucide="briefcase"></i>{{ t('onboard.next_jobs') }}</a>
+      <a class="ks-btn ks-btn-ghost" href="/account#become-owner"><i data-lucide="tractor"></i>{{ t('owner_up.dash_title') }}</a>{% endif %}
+      {% if user.role == 'owner' %}<a class="ks-btn" href="/farms/new"><i data-lucide="tractor"></i>{{ t('onboard.next_farm') }}</a>{% endif %}
+      <a class="ks-btn ks-btn-ghost" href="/schemes"><i data-lucide="landmark"></i>{{ t('onboard.next_schemes') }}</a>
+      <a class="ks-btn ks-btn-ghost" href="/account"><i data-lucide="id-card"></i>{{ t('onboard.next_profile') }}</a>
+      <a class="ks-btn ks-btn-ghost" href="/dashboard"><i data-lucide="layout-dashboard"></i>{{ t('nav.dashboard') }}</a>
+    </div>
+  </div>
+</section>
+{% endblock %}
+{% block scripts %}<script nonce="{{ csp_nonce }}" src="{{ asset('js/pages/account.js') }}"></script>{% endblock %}

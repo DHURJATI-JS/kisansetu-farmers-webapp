@@ -1,0 +1,562 @@
+[
+ {
+  "severity": "critical",
+  "title": "Rate limiter froze the whole server for ~2 s at a time",
+  "found_by": "Locust smoke run: p95 jumped to 2.1 s; loop-lag monitor showed a 2,023 ms stall; asyncio debug named the task",
+  "impact": "slowapi checks every request with a synchronous Redis client on the event loop. Any slow Redis connect (here: 2 s) blocked every request in flight.",
+  "fix": "Replaced slowapi with an async sliding-window limiter: one Lua round trip on the existing async Redis client, pure-ASGI middleware, same decorator API."
+ },
+ {
+  "severity": "high",
+  "title": "Pages waited up to 79 s behind an AI chat",
+  "found_by": "Multi-worker bug hunt: /dashboard (79 s), the farm team tab (66 s) and an AI chat (82 s) finished in the same second",
+  "impact": "The AI chat wrote the farm's salary accruals while building its context, then held that transaction — and its row locks — while the slow AI answered; the hourly payroll job did the same around its AI due-date warnings.",
+  "fix": "Commit before every AI call (chat) and per farm (payroll job); regression test: a coworker's dashboard and the owner's team tab answer in < 5 s while an AI reply is pending."
+ },
+ {
+  "severity": "high",
+  "title": "Multi-worker mode on Windows let requests stall for minutes",
+  "found_by": "Multi-worker re-test: e2e requests timed out; tracing showed all 1,009 traced requests finished in < 3 s, so the stalled ones never reached any worker",
+  "impact": "uvicorn shares one listening socket between Windows processes; some connections were not picked up for minutes.",
+  "fix": "Windows runs one worker (guard in run.py); several workers run on Linux / Docker, where the multi-worker tests ran clean."
+ },
+ {
+  "severity": "high",
+  "title": "Docker image: OpenCV could not load (libGL missing)",
+  "found_by": "Multi-worker test inside the Linux container: GSTIN certificate unreadable",
+  "impact": "RapidOCR and the face detector were unavailable in the production image; OCR fell back to the AI alone.",
+  "fix": "libgl1 added to the image; OpenCV pinned to 4.x."
+ },
+ {
+  "severity": "high",
+  "title": "OpenCV 5 silently switched off the face detector",
+  "found_by": "Face-check test: a green square was accepted while the AI was busy",
+  "impact": "OpenCV 5 dropped CascadeClassifier; the failure was only logged at info level, so face checks rested on the AI alone.",
+  "fix": "OpenCV pinned below 5; a missing detector is now a warning, and a unit test fails if it is unavailable."
+ },
+ {
+  "severity": "high",
+  "title": "Inline comments in .env became setting values in Docker",
+  "found_by": "Container run: HTTP 500 when saving a product (embedding call to a bogus endpoint)",
+  "impact": "Docker Compose kept the comment as the value, so vLLM, Gemma 3, embeddings, Tesseract and GSTIN API pointed at the comment text.",
+  "fix": "Comments moved to their own lines; settings treat a value that is only a comment as unset; failed embeddings now fall back to keyword search instead of failing the request."
+ },
+ {
+  "severity": "high",
+  "title": "Antivirus errors counted as clean; files stored unscanned when ClamAV was down",
+  "found_by": "Upload hardening review",
+  "impact": "Any ClamAV reply other than FOUND (e.g. a size-limit ERROR) passed, and outside production a dead scanner let files through.",
+  "fix": "Every upload is scanned first and must come back OK, otherwise it is refused; infected files are logged as abuse events and reported to the superadmin; readiness checks report ClamAV."
+ },
+ {
+  "severity": "high",
+  "title": "PDF script check could be bypassed",
+  "found_by": "Upload hardening review (+ bug-hunt chaos uploads)",
+  "impact": "Hex-escaped names (/J#61vaScript) or actions inside compressed object streams slipped past the byte search.",
+  "fix": "Names are decoded and compressed streams inspected (bomb-safe budget); PDFs are downloaded, never shown inline; images are rebuilt and served sandboxed."
+ },
+ {
+  "severity": "high",
+  "title": "Signed-in users got HTTP 500 instead of 403/404",
+  "found_by": "Bug-hunt e2e: an unknown scheme link while signed in",
+  "impact": "On any error the DB session rolled back, expiring the signed-in user object; the error page then crashed reading the user's name.",
+  "fix": "get_db() detaches (expunges) loaded objects before the rollback, so error pages render normally."
+ },
+ {
+  "severity": "high",
+  "title": "Every new DB / Redis / HTTP connection to 'localhost' cost ~2 s",
+  "found_by": "Cold-start timing per page (first hit 2,151 ms, second 20 ms) and a direct socket test (2,074 ms vs 1 ms)",
+  "impact": "On Windows 'localhost' resolves to IPv6 ::1 first; Docker publishes 127.0.0.1 only, so each connect waited for the IPv6 attempt to fail.",
+  "fix": "Configuration and docs use 127.0.0.1; load and e2e clients too."
+ },
+ {
+  "severity": "high",
+  "title": "Dynamic translation held a DB connection for the whole AI call",
+  "found_by": "Code review during the bug hunt + /api/i18n/translate p95 of 6 s",
+  "impact": "A slow AI gateway (minutes) would tie up requests and drain the connection pool.",
+  "fix": "Cache lookup releases the connection at once; one deduplicated background AI job per text; the request waits at most 3 s; the next view is served from the cache."
+ },
+ {
+  "severity": "high",
+  "title": "Partial updates through GO wiped the fields that were not sent",
+  "found_by": "10-minute stress test: HTTP 500 “null value in column full_name” when a profile change was confirmed",
+  "impact": "Prepare stored the full payload with every field; GO re-parsed it as if all fields had been sent, so profile, farm, branch, shop and product updates set unspecified fields to NULL (HTTP 500 for required fields, silent data loss for optional ones). The web forms send complete payloads, which hid it.",
+  "fix": "Prepared payloads are stored with exclude_unset, so GO and co-owner proposals apply exactly what was sent. Regression tests for profile and product updates."
+ },
+ {
+  "severity": "high",
+  "title": "Password guessing could lock the real superadmin out",
+  "found_by": "10-minute stress test: attackers' password guessing locked the superadmin (3 lockouts from 3 attacker IPs); the next admin sign-in was refused",
+  "impact": "The wrong-password lockout applied to the whole account, so anyone could block any account by typing wrong passwords (lockout denial of service).",
+  "fix": "Lockout is counted per account AND IP in Redis: attackers lock only themselves. Regression test: 5 wrong tries from one IP give 429 while the owner signs in from another IP."
+ },
+ {
+  "severity": "medium",
+  "title": "Scheduled jobs ran once per worker",
+  "found_by": "Multi-worker bug hunt: four 'surveys' job runs in the same second",
+  "impact": "The Redis lock only stopped concurrent runs, so every interval job ran four times back to back with four workers.",
+  "fix": "Each schedule period runs once across all workers (Redis slot marker); admin 'run now' still forces a run."
+ },
+ {
+  "severity": "medium",
+  "title": "Some state was per worker process",
+  "found_by": "Multi-worker readiness review",
+  "impact": "IP bans reached other workers up to 30 s late; settings changes up to 30 s late; a signed-out device on another worker could still receive notifications for 1.5 s; AI concurrency and translation work multiplied by the number of workers; workers raced to create tables.",
+  "fix": "Bans checked in Redis; settings invalidated via Redis; live events go to the current login's session room; AI budget split across workers; one translator per language; start-up serialised by an advisory lock; metrics published per worker."
+ },
+ {
+  "severity": "medium",
+  "title": "Hostile text could reach storage",
+  "found_by": "Sanitisation review + chaos 'hostile text' task",
+  "impact": "Bidi overrides (Trojan Source), control characters, lone surrogates (crash on save) and HTML could be stored.",
+  "fix": "Global sanitisation middleware for JSON / form / query input (Indian scripts with ZWJ kept, passwords untouched); CSV exports neutralise spreadsheet formulas."
+ },
+ {
+  "severity": "medium",
+  "title": "Possible deadlock between orders for the same items",
+  "found_by": "Buyers racing with multi-item orders in random line order",
+  "impact": "Two orders listing the same products in opposite order lock rows in opposite order and Postgres aborts one (HTTP 500).",
+  "fix": "Stock rows are always locked in product-id order (orders and cancellations)."
+ },
+ {
+  "severity": "medium",
+  "title": "Order placement held stock locks while writing notifications",
+  "found_by": "GO order.place p95 1.7 s under contention for the last units",
+  "impact": "Concurrent buyers queued behind each other's notification inserts.",
+  "fix": "Notifications are written first; conditional stock decrements run last, just before commit."
+ },
+ {
+  "severity": "medium",
+  "title": "Template compilation stalled the event loop after each deploy",
+  "found_by": "Loop-lag spikes of 115–230 ms during ramp-up",
+  "impact": "The first render of each template compiled it on the event loop, delaying all other requests.",
+  "fix": "All 62 templates are compiled at startup (0.42 s, before serving)."
+ },
+ {
+  "severity": "medium",
+  "title": "AI abuse assessments had no concurrency cap",
+  "found_by": "Chaos users hammering rate limits from many IPs",
+  "impact": "An attack from many IPs could turn into a flood of AI calls (amplification).",
+  "fix": "At most 2 assessments run at once; otherwise the guard decides without the AI (temporary ban)."
+ },
+ {
+  "severity": "medium",
+  "title": "First AI request and catalog writes blocked the event loop",
+  "found_by": "asyncio debug: ai-worker task took 0.42 s",
+  "impact": "TLS context creation and JSON file writes ran on the event loop.",
+  "fix": "AI clients are built at startup; catalog files are written in a worker thread."
+ },
+ {
+  "severity": "medium",
+  "title": "Changing the language skipped the one-login check",
+  "found_by": "Account-leak review: every route reading the raw session was audited",
+  "impact": "A device whose session had been replaced could still change the account's language.",
+  "fix": "The endpoint uses the verified current user (401, nothing changed). Regression test added."
+ },
+ {
+  "severity": "low",
+  "title": "'Out of stock' answered 400 at prepare but 409 at GO",
+  "found_by": "Buyer race task (unexpected 400s)",
+  "impact": "Clients could treat a stock conflict as a bad request.",
+  "fix": "Both steps answer 409 Conflict."
+ },
+ {
+  "severity": "low",
+  "title": "Racing sign-ins could leave an unusable session behind",
+  "found_by": "Stress test invariant one_live_session_per_account",
+  "impact": "Sessions whose key no longer matched (racing sign-ins, sign-ins from before the feature) stayed in Redis until used; the key check already rejected them.",
+  "fix": "After every sign-in, sessions without the committed key are ended at once; the invariant now checks usable sessions."
+ },
+ {
+  "severity": "low",
+  "title": "Windows logged a traceback whenever a client reset a socket",
+  "found_by": "Stress test log scan (asyncio _call_connection_lost)",
+  "impact": "Harmless CPython proactor noise that would hide real errors in the logs.",
+  "fix": "Filtered on Windows only; every other loop error is still logged."
+ },
+ {
+  "severity": "feature",
+  "title": "Salary payment screenshot sent to the worker",
+  "found_by": "Requested during the multi-worker re-test",
+  "impact": "Workers had to sign in to see the proof of payment.",
+  "fix": "The screenshot goes out on every channel the worker has: attached to the e-mail, as the WhatsApp picture, and via a private signed link in the SMS (30 days, this payment and this worker only, never cached or indexed)."
+ },
+ {
+  "severity": "feature",
+  "title": "One login per account, with the reason shown to signed-out devices",
+  "found_by": "Requested during the bug hunt",
+  "impact": "A second login used to leave the first device signed in.",
+  "fix": "A per-login key (hash on the user row) is verified on every request and socket event; other devices are signed out at once, told why, their sockets cut; a 'new sign-in' notice goes to the account."
+ },
+ {
+  "severity": "feature",
+  "title": "Government schemes are no longer hard-coded",
+  "found_by": "Requested during the bug hunt",
+  "impact": "Schemes could not be added, updated or withdrawn without a code change.",
+  "fix": "Database-backed schemes with superadmin add/update/withdraw/restore (GO step), official-domain link checks, a daily link-health job, re-check reminders and notices to people who opened a changed scheme."
+ },
+ {
+  "severity": "high",
+  "title": "A manager could give notice to another manager (or withdraw the owner's notice)",
+  "found_by": "Role / notice code review (promotion & kick-out hunt)",
+  "impact": "Anyone with team rights could act on peers and superiors, or undo a notice someone above them gave.",
+  "fix": "Strict hierarchy (owner > co-owner > manager > accountant > supervisor > employee): only someone strictly above may give notice; only the notice giver, the owner or a co-owner may withdraw it; nobody acts on themselves. Enforced on the server, mirrored in the buttons."
+ },
+ {
+  "severity": "high",
+  "title": "A leader being let go kept full powers during the notice month",
+  "found_by": "Role / notice code review",
+  "impact": "A manager on notice could still pay, hire, give notices and receive the farm's private alerts for 30 days.",
+  "fix": "An individual notice pauses leadership at once (pages, actions, alerts, payment proofs); a farm/branch closure notice pauses nobody (those leaders run the shutdown). A new notice_kind column tells the two apart."
+ },
+ {
+  "severity": "high",
+  "title": "No way to promote or demote anyone",
+  "found_by": "Requested during the bug hunt",
+  "impact": "Roles were fixed forever after an invitation.",
+  "fix": "member.change_role: decided by the owner + all co-owners (proposal), pinned to the role the deciders saw (stale proposals fail instead of guessing), worker rules (age, photo, one job, hiring limit, branch) applied on demotion, member and owners told."
+ },
+ {
+  "severity": "medium",
+  "title": "Two leaders acting on one person at the same moment could leave an inconsistent row",
+  "found_by": "Concurrency review (notice vs resignation)",
+  "impact": "Last writer won: e.g. 'on notice' with the end date of a resignation.",
+  "fix": "The member row is locked for the whole GO (prepare re-runs in the same transaction); salary accruals are always written before the lock (same order as payroll, no deadlock). e2e race tests: exactly one wins."
+ },
+ {
+  "severity": "medium",
+  "title": "Co-owners could not be removed; proposals waiting for a departed co-owner were stuck forever",
+  "found_by": "Role code review",
+  "impact": "The error message pointed to a proposal that did not exist; a co-owner leaving froze every proposal still needing their vote.",
+  "fix": "coowner.remove proposal (the person removed has no vote); when a co-owner leaves, proposals they made fail and proposals that only waited for them run — each inside a savepoint so a failure leaves nothing half-done."
+ },
+ {
+  "severity": "medium",
+  "title": "Failed proposals could keep half of their changes",
+  "found_by": "Code review while adding proposal settlement",
+  "impact": "If an approved proposal failed midway, its earlier changes were committed together with the 'failed' status.",
+  "fix": "Proposals run in a SAVEPOINT; on failure the partial changes and their queued notifications are discarded."
+ },
+ {
+  "severity": "critical",
+  "title": "TEST_MODE defaulted to ON and was allowed in production",
+  "found_by": "Configuration review during the security hunt",
+  "impact": "A deployment that forgot TEST_MODE=false would return OTP codes in API responses (account takeover) and auto-approve farms.",
+  "fix": "The default is now OFF and the app refuses to start with ENV=production and TEST_MODE=true."
+ },
+ {
+  "severity": "high",
+  "title": "One spam message banned a whole network for 24 h; repeat offenders were never escalated",
+  "found_by": "Spam-ban review",
+  "impact": "Indian mobile carriers put thousands of farmers behind one IP (CGNAT): one spammer could lock a village out, while persistent spammers faced no growing penalty.",
+  "fix": "Strike points per IP and account (Redis, 7 days) → the AI judges the evidence at 3 points (rule floors: ≥8 always ban, ≥5 without AI) → fixed ladders: IP 1 h → 24 h → 7 d → 30 d, account posting ban 1 h → 24 h → 7 d (job, pay and complaints untouched). Shared IPs: ≤1 h and signed-in users pass."
+ },
+ {
+  "severity": "medium",
+  "title": "A lifted IP ban stayed active on other workers; overlapping bans survived a lift",
+  "found_by": "Multi-worker ban review",
+  "impact": "Up to 30 s of continued blocking after a superadmin lift — and for good if an AI ban and an automatic ban overlapped.",
+  "fix": "A lift ends every running ban of that IP, clears its strikes and publishes a lift marker every worker checks within 5 s; a new ban never shortens a longer one."
+ },
+ {
+  "severity": "medium",
+  "title": "Guard responses were raw JSON with a different error shape",
+  "found_by": "e2e bans test",
+  "impact": "Banned browsers saw raw JSON; the app showed a generic error instead of the reason.",
+  "fix": "Same error shape as every API error with a translated message; browsers get a small script-free HTML page."
+ },
+ {
+  "severity": "medium",
+  "title": "Schemes: official portals looked broken because their servers omit TLS intermediates",
+  "found_by": "Live official-page cross-check",
+  "impact": "PM-KISAN, APY, PMJJBY and PMSBY were flagged unreachable; e-NAM's expired certificate was not named.",
+  "fix": "AIA chasing like browsers do (the chain must still end at a trusted root); expired certificates reported as such to users; roots outside the trusted list shown to admins only."
+ },
+ {
+  "severity": "feature",
+  "title": "Schemes are cross-checked against the official page itself",
+  "found_by": "Requested during the bug hunt",
+  "impact": "A scheme could end or change its terms without anyone noticing.",
+  "fix": "Daily fingerprint of the official page vs the last reviewed version, key sentences added / removed, 'may have ended' signals, an AI reading kept only if it quotes the page and invents no numbers; JavaScript-only portals readable through an optional out-of-app headless browser."
+ },
+ {
+  "severity": "high",
+  "title": "AI answered in the wrong language after a language switch; stray JSON became 'I could not understand'",
+  "found_by": "e2e vernacular test",
+  "impact": "A Hindi question after a Hinglish one got a Hinglish (or English error) answer.",
+  "fix": "The reply language is detected from what the person wrote (script / Hinglish) and stated next to the question; history in another language is dropped; a wrong-script answer is retried once; prose before stray JSON is kept."
+ },
+ {
+  "severity": "medium",
+  "title": "Two malware uploads from one network did not lead to a ban",
+  "found_by": "e2e uploads test after the strike system",
+  "impact": "An attacker could keep probing the virus scanner.",
+  "fix": "Each malware upload is 5 strike points on the IP and the account: the second one bans the network (rule floor)."
+ },
+ {
+  "severity": "feature",
+  "title": "Kisan Didi: a talking guide with a live face",
+  "found_by": "Requested during the bug hunt",
+  "impact": "Farmers who cannot read well had no one to show them around.",
+  "fix": "Female farmer avatar (lip-sync from speech word events, blinking, eyebrows), page tours that light up one part at a time, tap-to-explain hard words, terms explained simply with warnings about legal-but-risky clauses, and the assistant can point at screen parts (validated)."
+ },
+ {
+  "severity": "feature",
+  "title": "Workers can always reach the farm owner",
+  "found_by": "Requested during the bug hunt",
+  "impact": "Workers had no phone number for the owner or managers.",
+  "fix": "Dashboard 'Who to call' (call / WhatsApp) for current jobs, jobs left in the last 60 days and jobs still owing money; never shown to outsiders or on public pages."
+ },
+ {
+  "severity": "low",
+  "title": "Salary-change SMS said 'per daily'",
+  "found_by": "Notification review",
+  "impact": "The unit was the raw database value, untranslated.",
+  "fix": "The unit is translated for each reader."
+ },
+ {
+  "severity": "high",
+  "title": "Rate-limit hits alone got normal users' networks banned for an hour",
+  "found_by": "3-hour soak (30-minute checkpoint: normal_users_never_ip_banned)",
+  "impact": "Owners clicking fast, people signing in from two devices and guide users reading many terms reached 30 rate-limited requests; each 429 also counted against the IP, and the AI called it 'automated abuse' — 17 such addresses were banned during the soak. On a shared mobile network that locks out everyone who is not signed in.",
+  "fix": "Rate limits already contain the traffic: strike points made only of rate-limit hits never ban below flood level (120 hits / 10 min, rule) and the AI is not asked; they still add up with real abuse (spam, password guessing, malware). The judge's instructions say so too. Regression test: 30+ rate-limited requests → throttled, not banned."
+ },
+ {
+  "severity": "high",
+  "title": "Repeated spam rode on a cached 'not spam' verdict",
+  "found_by": "Smoke run before the soak",
+  "impact": "The AI judged the first scam text alone as a farmer asking about a scam; the verdict was cached for the text, so a spammer could repeat it forever without strikes.",
+  "fix": "The cache key includes the signals (repeated / flooding); rule floors: injected markup, or the same text repeated with links / scam phrases, is blocked whatever the AI thinks."
+ },
+ {
+  "severity": "medium",
+  "title": "'Explain simply' could wait 150 s behind a busy AI",
+  "found_by": "Smoke run before the soak",
+  "impact": "Several people opening the same farm's terms each started an AI call; the queue made them wait up to 150 s.",
+  "fix": "One AI explanation per terms text at a time (Redis single-flight); everyone else gets the rule-based warnings at once with 'plain-words version coming'; spam classification yields to people's questions."
+ },
+ {
+  "severity": "medium",
+  "title": "A co-owner removal proposal ran itself a second time",
+  "found_by": "Code review during the soak",
+  "impact": "The settlement after removing a co-owner saw its own (still pending) proposal and ran it again: voters got a false 'proposal failed' message and the proposal kept a stale error.",
+  "fix": "Proposals being executed are marked for the transaction; settlement skips them. e2e asserts no false message."
+ },
+ {
+  "severity": "low",
+  "title": "One antivirus guess could pause someone's posting",
+  "found_by": "Soak evidence review (posting bans)",
+  "impact": "A ClamAV heuristic hit (not a signature) counted as full malware: 5 points → posting ban after one file.",
+  "fix": "Heuristic / PUA detections are 2 points (watch); confirmed signatures stay 5 points."
+ },
+ {
+  "severity": "low",
+  "title": "Lifting a posting ban left older ones 'active'; a ban on our own proxy said 'Saved'",
+  "found_by": "Code review during the soak",
+  "impact": "Superadmin views could show a lifted account as still banned; a manual ban on a protected address silently did nothing.",
+  "fix": "A lift ends every running posting ban of the account; protected addresses are refused with a clear reason and shared addresses get a warning (number of accounts seen)."
+ },
+ {
+  "severity": "high",
+  "title": "Two checkouts could draw the same order number (HTTP 500)",
+  "found_by": "3-hour soak, after ~9 000 orders in one day",
+  "impact": "Order numbers had 6 random hex digits per day (16.7 million): at a few thousand orders a day a collision is almost certain (birthday problem) and that checkout failed with a server error.",
+  "fix": "8 characters from an unambiguous alphabet (31⁸ ≈ 8.5·10¹¹ a day, easy to read out on the phone) and the insert runs in a savepoint: a taken number is drawn again. The same checkout racing itself (two devices) returns the one order instead of an error. Test: tests/e2e_orders_race.py forces collisions."
+ },
+ {
+  "severity": "medium",
+  "title": "The daily scheme check could lose the whole day's results",
+  "found_by": "Server log review after the confirmation soak (StaleDataError in the scheme job)",
+  "impact": "The job held one database transaction across minutes of portal fetches and AI readings; a scheme edited, withdrawn or deleted meanwhile made the final write fail, losing every scheme's link and official-page result for that run — and a pooled connection sat idle in a transaction for minutes.",
+  "fix": "No transaction is held while portals or the AI answer; each scheme's result is written in its own savepoint on a fresh, locked row (changed / withdrawn / deleted meanwhile → skipped for this run, the rest recorded). Test: tests/e2e_scheme_job.py deletes and withdraws schemes mid-run and checks no transaction was held."
+ },
+ {
+  "severity": "low",
+  "title": "Owners processing many orders hit the 30 confirmations / minute limit",
+  "found_by": "3-hour soak (double-GO checks and shop owners throttled)",
+  "impact": "A busy shop owner marking many orders in a row was slowed down by a limit meant for scripts.",
+  "fix": "Per-account limits raised to 60 GO / 80 prepare per minute (still far below what a script would need); a rate-limited double click is no longer counted as a double-execution failure — the database invariant (no action executed twice) stays the proof."
+ },
+ {
+  "severity": "high",
+  "title": "Passwords could be stored readable in prepared actions and the audit log",
+  "found_by": "Code review while adding the farm-owner upgrade",
+  "impact": "A confirm-step action keeps its payload until GO; the password-change payload (current + new password) was stored as plain JSON, never deleted (expired rows were only marked), and copied into the audit log the superadmin can read.",
+  "fix": "Secret fields are sealed with AES-GCM (bound to the person and field) while pending, used once at GO and wiped on GO, cancel and expiry; the audit log redacts every secret field to *** whoever writes it. Unit test, e2e check and two load-test invariants."
+ },
+ {
+  "severity": "medium",
+  "title": "Real webcam selfies were refused as 'no face' or 'two faces'",
+  "found_by": "The project owner testing the new live camera (3 of 4 photos refused)",
+  "impact": "OpenCV's default face model missed faces in laptop-webcam light that the AI clearly saw, and a small background detection counted as a second person — people could not finish onboarding.",
+  "fix": "Detections under a quarter of the main face's size are background; only when the AI is sure of exactly one face does OpenCV get a second look with its other face model (still strict when the AI is unsure or down). All 4 refused photos now pass; AI face counts are parsed safely."
+ },
+ {
+  "severity": "medium",
+  "title": "Machine translations in the wrong alphabet, stale after edits, and missing for 24 languages",
+  "found_by": "Audit of every language catalog after a report that some languages did not work",
+  "impact": "Bengali had Cyrillic and Hindi lines, Kannada had Telugu and Gujarati; reworded English kept old translations; only ~150 lines per night were filled, so Telugu, Gujarati, Urdu, Malayalam… showed English everywhere.",
+  "fix": "A quality gate (own alphabet, placeholders, no markup, not English) on making AND loading translations; source hashes drop stale lines; a 15-minute background job fills the first-visit screens for every language and full catalogs for languages in use, only when no person has used the AI for 45 s."
+ },
+ {
+  "severity": "medium",
+  "title": "Joining a farm needed live GPS — impossible with location turned off",
+  "found_by": "The project owner (location disabled in the browser)",
+  "impact": "Job applications and invitation-accepts required a live position; delivery orders needed GPS coordinates; people without GPS (or who refuse it) could sign up only via GPS and could not join any farm.",
+  "fix": "Sign-up and profile accept a typed address (state, district, village, PIN — found in the chosen state only, PIN never stored); joining, invitations, delivery and 'near me' use the saved location (GPS or typed); the farm sees which. The 30 km rule still applies."
+ },
+ {
+  "severity": "medium",
+  "title": "The Docker container stopped answering when PORT changed in .env",
+  "found_by": "Rebuilding the container after the dev port moved to 1111",
+  "impact": "docker compose passes .env into the container, so the app listened on the dev port while the health check and the published port expected 8088 — the container went unhealthy and served nothing.",
+  "fix": "docker-compose.yml pins PORT=8088 inside the container; the published port is chosen with APP_PORT."
+ },
+ {
+  "severity": "low",
+  "title": "AI chat layout: crushed suggestion chips on phones, wrapped header, clumsy composer",
+  "found_by": "Screenshots of the chat widget and /assistant on desktop and phone",
+  "impact": "On phones the quick-question chips shrank to 6 px; the title pushed the speaker / close buttons to a second line; three stacked icon buttons beside a small text box; the assistant page repeated its title and hid the text box below the fold; the chat button floated forever.",
+  "fix": "Only the conversation flexes; one-line header; full-width text box with mic / camera / gallery / Send underneath; a full-height sheet on phones; the assistant page fits the screen; the button floats three times then rests."
+ },
+ {
+  "severity": "feature",
+  "title": "Live camera, typed location, worker → owner upgrade, public stress-test page",
+  "found_by": "Requests from the project owner",
+  "impact": "Laptop users could only upload files; GPS was mandatory; a farmer could not also run a farm; load-test results were visible to the superadmin only.",
+  "fix": "In-page camera next to every photo / document input; typed addresses everywhere a location is needed; account.become_owner (keeps the current job); /stress-test shows headline numbers, charts, run history and the database checks publicly, without internals."
+ },
+ {
+  "severity": "low",
+  "title": "Requests lost when a client reused a connection the server was closing (keep-alive race)",
+  "found_by": "Final stress test (4 of 60,210 requests got no answer: 'HTTP 0'; one double-click GO check tripped)",
+  "impact": "The server closed idle connections after 10 s while clients often pause 5-15 s; a request sent at that instant got no response. Browsers usually retry, apps and scripts may not. Nothing ran twice (database invariant held).",
+  "fix": "HTTP keep-alive is configurable (KEEP_ALIVE_SECONDS) and now 75 s - longer than normal pauses and than common load-balancer idle timeouts, so the server is never the one closing mid-pause."
+ },
+ {
+  "severity": "high",
+  "title": "Custom terms asking workers to pay 1 lakh to join were passed as fair",
+  "found_by": "The project owner (farm settings → Check my terms with AI)",
+  "impact": "No rule covered money taken from workers; rule hits were only hints the AI could overrule (and the local model missed this one); the AI's verdict was cached by text, so the same terms stayed 'fair'. Such terms were live and workers could accept them.",
+  "fix": "Fixed rules for fees / deposits / bonds / kept documents / worked-off advances block the terms whatever the AI says (negation-aware: 'no joining fee' and 'we pay a joining bonus' pass); rules are re-applied to cached reviews; live terms with such a clause stop hiring and the owner sees why; workers get a 'pays to join' warning. 21-case unit test."
+ },
+ {
+  "severity": "medium",
+  "title": "End dates in UTC: a job could end the day before it started, and pay was counted after it",
+  "found_by": "Confirmation stress test (invariant no_pay_after_the_job_ended) — a run that crossed midnight in India",
+  "impact": "Farm and account deletion stamped end dates with the UTC date, which is 'yesterday' in India until 05:30; order numbers used the UTC date too; three tests forced dates with the database's UTC CURRENT_DATE.",
+  "fix": "Indian dates everywhere (today_ist / now_ist); a unit test fails if app code uses UTC or machine-local dates."
+ },
+ {
+  "severity": "medium",
+  "title": "A shop could be closed instantly, leaving its open orders hanging",
+  "found_by": "The project owner",
+  "impact": "Shop settings had an open/closed switch: no co-owner vote, open orders neither cancelled nor finished.",
+  "fix": "shop.close is a co-owner vote; one click cancels orders not yet with a courier; courier orders must be delivered ('closing' meanwhile, no new orders); the shop closes by itself after the last delivery."
+ },
+ {
+  "severity": "low",
+  "title": "Header menu ran into the logo; phone buttons wrapped; a form pushed pages sideways",
+  "found_by": "The project owner + a layout audit (9 widths × guest / worker / owner × English / Hindi / Tamil × 35 pages)",
+  "impact": "An owner's five menu items with icons did not fit the header and overlapped the logo; 'Log in' showed on phones although meant to be hidden (button style beat the utility) and wrapped with 'Sign up'; the ledger form, long AI suggestions and badges overflowed or broke onto two lines.",
+  "fix": "Logo never shrinks; the menu steps down to words only, then icons with tooltips; phone header fits at 320 px; grid items can shrink; badges and small buttons do not wrap; AI suggestions wrap (mouse) or swipe (touch). Audit clean."
+ },
+ {
+  "severity": "high",
+  "title": "Signing in could send people on to another website (open redirect)",
+  "found_by": "Security bug hunt — code review + tests/e2e_security.py (real browser)",
+  "impact": "/login?next=/\\evil.example (or a tab / newline between the slashes) passed the 'starts with one slash' check, and browsers read the backslash as a slash — after a real sign-in the person landed on a look-alike site.",
+  "fix": "The target is resolved by the browser's own URL parser and must be this site; the absolute same-site address is used (never a bare path that normalises to //host). A browser test tries 9 tricks."
+ },
+ {
+  "severity": "high",
+  "title": "One farm's records could be tied to ANOTHER farm's branch",
+  "found_by": "Security bug hunt — code review + tests/e2e_security.py (real browser) + Security bug hunt — independent cross-account audit of every action and route",
+  "impact": "ledger.add and insurance.add never checked the branch; member.invite checked it only for workers. A manager invited onto another farm's branch could, through the halts that grievances or an unpaid notice raise, hide that farm's jobs and products from the marketplace — and its owner could neither see nor lift the halt.",
+  "fix": "Every action checks the branch belongs to the farm; marketplace halts and branch closing stay inside their own farm. A unit test scans all actions; a load-test invariant checks 16 tables for any row tied to another farm's branch."
+ },
+ {
+  "severity": "medium",
+  "title": "Text sent for translation could change how another farm's terms read in Hindi",
+  "found_by": "Security bug hunt — independent cross-account audit of every action and route",
+  "impact": "All new texts of one translation request (no sign-in needed) shared one AI prompt and the first answer is cached for everybody — a note sent next to a farm's job terms could ask the AI to replace their translation.",
+  "fix": "One AI call per text, so texts never share a prompt; at most 12 new texts per request (the rest follow on the next view)."
+ },
+ {
+  "severity": "medium",
+  "title": "Every farmer's phone and email were shown to any account by default",
+  "found_by": "Security bug hunt — independent cross-account audit of every action and route",
+  "impact": "The community directory showed phone and email unless the farmer had switched it off — nobody was asked at sign-up — and buyers saw them too; 200 pages could be collected.",
+  "fix": "Opt-in: everybody starts hidden (existing accounts reset, no consent had been collected); shown only to farmers and owners; the directory is rate limited."
+ },
+ {
+  "severity": "medium",
+  "title": "A banned owner kept access to the farm's money",
+  "found_by": "Security bug hunt — independent cross-account audit of every action and route + Security bug hunt — code review + tests/e2e_security.py (real browser)",
+  "impact": "A banned owner (still signed in, to appeal) could open salary payment proofs, payment screenshots and receipts and the farm statement from the account page, and kept getting the farm's order / pay / application alerts.",
+  "fix": "A banned or deleted account holds no farm role anywhere (one central check); farm alerts go to active leaders only. Their own pay and statement stay visible."
+ },
+ {
+  "severity": "medium",
+  "title": "A rejected farm kept its GSTIN locked forever (GSTIN squatting)",
+  "found_by": "Security bug hunt — independent cross-account audit of every action and route",
+  "impact": "A GSTIN could be verified from a photo of someone else's invoice; even after the admin rejected that farm, the real business was told 'already used by another owner' for good.",
+  "fix": "Rejecting a farm frees its GSTIN. The admin's farm list shows the name on the GST registration next to the owner, with a warning when they share no word (names in other scripts are not compared)."
+ },
+ {
+  "severity": "low",
+  "title": "Supervisors saw farm-wide salary totals through the AI assistant",
+  "found_by": "Security bug hunt — independent cross-account audit of every action and route",
+  "impact": "The assistant's context gave supervisors (crop leads without payroll access) the farm's total salary due and overdue.",
+  "fix": "Farm money only for roles with payroll access; a supervisor still sees their own pay."
+ },
+ {
+  "severity": "low",
+  "title": "A grievance could be filed against the wrong farm",
+  "found_by": "Security bug hunt — independent cross-account audit of every action and route",
+  "impact": "A worker who also leads another farm had a complaint (and the halt it can raise) filed against the farm they joined last, not the one where they work.",
+  "fix": "Grievances go to the farm where the person works."
+ },
+ {
+  "severity": "low",
+  "title": "Outside feed links were not limited to web links",
+  "found_by": "Security bug hunt — code review + tests/e2e_security.py (real browser)",
+  "impact": "Source links from USGS / GDACS / EONET went straight into farm pages; the CSP blocks scripts, but a tampered feed could still plant odd links.",
+  "fix": "Only http(s) links are kept (unit test)."
+ },
+ {
+  "severity": "high",
+  "title": "Cancelling an order deadlocked with checkouts at the same shop (HTTP 500)",
+  "found_by": "Security bug hunt — 10-minute load test, 200 users on 4 workers (run b5cc4abe)",
+  "impact": "Every order change ended by locking its shop row FOR UPDATE — even for open shops. A checkout's order insert holds a key-share lock on the shop while it waits for product rows that a cancellation already holds: a lock cycle. Reproduced: 52 deadlocks in 4 rounds of 10 cancellations + 10 checkouts.",
+  "fix": "The shop status is read without a lock; only a closing shop is locked, FOR NO KEY UPDATE (compatible with checkouts) SKIP LOCKED (never waits); a 5-minute safety net closes any shop whose last order raced. A checkout re-reads the shop status after its insert, so an order can't slip into a shop being closed. 0 deadlocks; regression test in tests/e2e_orders_race.py."
+ },
+ {
+  "severity": "medium",
+  "title": "Managers and accountants could work on two farms at once",
+  "found_by": "The project owner",
+  "impact": "The one-job rule counted only employees and supervisors: a worker could also be a manager or accountant on another farm (and vice versa), and two job offers accepted at the same moment could both go through.",
+  "fix": "One working farm per person — employee, supervisor, manager or accountant, notice period included; farms the person owns or co-owns don't count. A database index makes a second working farm impossible even in a race (clear refusal, no error page). Dashboard and job pages say 'You work on … now' instead of offering a button that would fail."
+ },
+ {
+  "severity": "low",
+  "title": "Farmers who own farms could not apply for work",
+  "found_by": "The project owner",
+  "impact": "After upgrading to farm owner, applying for a job was refused (farmer accounts only), although owning a farm is not work.",
+  "fix": "Owners apply like farmers (photo, age, 30 km, one working farm); nobody can apply to their own farm's jobs."
+ },
+ {
+  "severity": "low",
+  "title": "Joining a farm you already belong to gave an error page or a bad record",
+  "found_by": "Code review while adding the one-working-farm rule",
+  "impact": "An owner could be invited onto their own farm as staff; inviting a co-owner as staff on the same farm crashed with a database error.",
+  "fix": "Refused up front ('already a member') at invite, acceptance and hiring; database races are turned into clear refusals."
+ },
+ {
+  "severity": "low",
+  "title": "A worker serving notice could not move to a new farm",
+  "found_by": "The project owner",
+  "impact": "During a notice period the worker had to wait for the notice to end (or resign first) before joining another farm.",
+  "fix": "They may join a new farm during notice: the old job ends that day — that farm's salary stops (the rest of the notice is no longer owed); pay for the days already worked stays owed (wage law). The confirm step warns first; the old farm's owner and the worker are told how much is still to pay. An active job still blocks a second farm."
+ }
+]

@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% import "partials/_macros.html" as m with context %}
+{% set ai_auto_open = True %}
+{% block title %}{{ t('login.title') }}{% endblock %}
+{% block content %}
+<section class="ks-panel ornate max-w-lg mx-auto mt-6">{{ m.corners() }}
+  <div class="ks-between">
+    <h1 class="ks-title ks-h2 m-0">{{ t('login.title') }}</h1>
+    <button type="button" class="ks-btn ks-btn-ghost ks-btn-sm" data-speak="#login-voice"><i data-lucide="volume-2"></i>{{ t('common.listen') }}</button>
+  </div>
+  {% if signout %}
+  <div class="ks-alert {{ 'danger' if signout.reason in ('replaced', 'banned') else 'warn' }} mt-3" role="alert" id="signout-notice">
+    <i data-lucide="log-out"></i>
+    <div><strong>{{ t('logout.title') }}</strong>
+      <div>{{ t('logout.reason.' ~ signout.reason, device=signout.device or t('logout.unknown_device'), when=signout.when or t('logout.just_now'), ip=signout.ip or '?') }}</div>
+      {% if signout.reason == 'replaced' %}<div class="ks-small mt-1">{{ t('logout.not_you') }} <a href="/forgot">{{ t('logout.reset_password') }}</a></div>{% endif %}
+    </div>
+  </div>
+  {% endif %}
+  <p class="ks-muted" id="login-voice">{{ t('login.voice') }}</p>
+  <form id="login-form" class="mt-4" autocomplete="on" novalidate>
+    {{ m.field('phone', t('field.phone'), type='tel', required=True, attrs='inputmode="tel" autocomplete="tel" maxlength="16"', placeholder='98765 43210') }}
+    {{ m.field('password', t('field.pin_or_password'), type='password', required=True, attrs='autocomplete="current-password" maxlength="128"') }}
+    <div id="totp-wrap" class="ks-hidden">{{ m.field('totp', t('field.totp'), attrs='inputmode="numeric" autocomplete="one-time-code" maxlength="8"') }}</div>
+    <button class="ks-btn ks-btn-xl w-full" type="submit"><i data-lucide="log-in"></i>{{ t('login.submit') }}</button>
+  </form>
+  <div class="ks-between mt-4 ks-small">
+    <a href="/forgot">{{ t('login.forgot') }}</a>
+    <a href="/signup">{{ t('login.no_account') }}</a>
+  </div>
+</section>
+{% endblock %}
+{% block scripts %}<script nonce="{{ csp_nonce }}" src="{{ asset('js/pages/auth.js') }}"></script>{% endblock %}

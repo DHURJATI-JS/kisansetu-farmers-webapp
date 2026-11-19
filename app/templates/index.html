@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+{% import "partials/_macros.html" as m with context %}
+{% block title %}{{ t('home.title') }}{% endblock %}
+{% block content %}
+<section class="ks-hero">
+  <div class="ks-reveal">
+    <span class="ks-badge gold mb-3"><i data-lucide="sparkles"></i>{{ t('home.kicker') }}</span>
+    <h1 class="ks-title ks-h1">{{ t('home.headline') }}</h1>
+    <p class="text-lg ks-muted">{{ t('home.lead') }}</p>
+    <div class="ks-row mt-4">
+      <a class="ks-btn ks-btn-xl" href="/jobs"><i data-lucide="briefcase"></i>{{ t('home.cta_jobs') }}</a>
+      <a class="ks-btn ks-btn-gold ks-btn-xl" href="/signup"><i data-lucide="tractor"></i>{{ t('home.cta_farm') }}</a>
+      <a class="ks-btn ks-btn-ghost ks-btn-xl" href="/shop"><i data-lucide="store"></i>{{ t('home.cta_shop') }}</a>
+    </div>
+    <button type="button" class="ks-btn ks-btn-ghost ks-btn-sm mt-3" data-speak="#home-lead-voice"><i data-lucide="volume-2"></i>{{ t('home.listen') }}</button>
+    <span id="home-lead-voice" class="sr-only">{{ t('home.headline') }}. {{ t('home.lead') }}</span>
+  </div>
+  <div class="ks-reveal">{% include "partials/_planet.html" %}</div>
+</section>
+
+<section class="ks-grid cols-4 my-6">
+  {{ m.stat(t('home.stat_farms'), stats.farms, 'tractor') }}
+  {{ m.stat(t('home.stat_workers'), stats.workers, 'users') }}
+  {{ m.stat(t('home.stat_jobs'), stats.jobs, 'briefcase') }}
+  {{ m.stat(t('home.stat_products'), stats.products, 'shopping-basket') }}
+</section>
+
+<section class="ks-panel ornate my-8">{{ m.corners() }}
+  <h2 class="ks-title ks-h2 text-center">{{ t('home.features_title') }}</h2>
+  <div class="ks-divider"><i data-lucide="sprout"></i></div>
+  <div class="ks-grid cols-3">
+    {% for icon, key in [('shield-check','protect'), ('badge-indian-rupee','wages'), ('cloud-sun-rain','weather'), ('sparkles','ai'), ('languages','languages'), ('store','shop'), ('landmark','schemes'), ('heart-handshake','wellbeing'), ('file-badge','gstin'), ('smile','guide'), ('map-pin','location'), ('camera','camera'), ('trending-up','grow')] %}
+    <article class="ks-card hover ks-reveal">
+      <div class="flex items-center gap-3 mb-2"><span class="ks-icon-btn" aria-hidden="true"><i data-lucide="{{ icon }}"></i></span><h3 class="ks-h3 m-0">{{ t('home.f.' ~ key ~ '.title') }}</h3></div>
+      <p class="ks-muted ks-small m-0">{{ t('home.f.' ~ key ~ '.body') }}</p>
+    </article>
+    {% endfor %}
+  </div>
+</section>
+
+{% if stress %}{% set ss = stress.summary or {} %}
+<section class="ks-panel ornate my-8">{{ m.corners() }}
+  <div class="ks-between"><h2 class="ks-title ks-h2 m-0">{{ t('home.stress.title') }}</h2>
+    <a class="ks-btn ks-btn-ghost ks-btn-sm" href="/stress-test"><i data-lucide="gauge"></i>{{ t('home.stress.cta') }}</a></div>
+  <p class="ks-muted">{{ t('home.stress.body') }}</p>
+  <div class="ks-grid cols-4">
+    {{ m.stat(t('prodtest.kpi.users'), ss.get('peak_users', '—'), 'users') }}
+    {{ m.stat(t('prodtest.kpi.requests'), '{:,}'.format(ss.get('requests') or 0), 'activity') }}
+    {{ m.stat(t('prodtest.kpi.p95'), ('{:,.0f}'.format(ss.p95) ~ ' ms') if ss.get('p95') is not none else '—', 'timer-reset') }}
+    {{ m.stat(t('prodtest.kpi.checks'), (ss.get('invariants_passed') or 0) ~ ' / ' ~ (ss.get('invariants_total') or 0), 'list-checks') }}
+  </div>
+  <p class="ks-small ks-muted mt-2">{{ t('home.stress.when', date=stress.started_at|dt) }}</p>
+</section>
+{% endif %}
+
+<section class="ks-grid cols-3 my-8">
+  {% for icon, key, href in [('sprout','worker','/signup'), ('tractor','owner','/signup'), ('shopping-basket','buyer','/shop')] %}
+  <a class="ks-card hover ks-reveal no-underline text-inherit" href="{{ href }}">
+    <i data-lucide="{{ icon }}" class="w-10 h-10 text-emerald-500"></i>
+    <h3 class="ks-title ks-h3 mt-2">{{ t('home.r.' ~ key ~ '.title') }}</h3>
+    <p class="ks-muted ks-small">{{ t('home.r.' ~ key ~ '.body') }}</p>
+    <span class="ks-btn ks-btn-sm mt-2">{{ t('home.r.' ~ key ~ '.cta') }}</span>
+  </a>
+  {% endfor %}
+</section>
+{% endblock %}

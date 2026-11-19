@@ -1,0 +1,14 @@
+{% extends "shop/index.html" %}
+{% block title %}{{ shop.name }}{% endblock %}
+{% block shop_heading %}{{ shop.name }}{% endblock %}
+{% block shop_id %}{{ shop.id }}{% endblock %}
+{% block shop_intro %}
+<p class="ks-muted"><a href="/f/{{ farm.id }}">{{ farm.name }}</a> · {{ t('farming.' ~ farm.farming_type) }}</p>
+{% if shop.description %}<p data-translate>{{ shop.description }}</p>{% endif %}
+<div class="ks-row mb-3">
+  {% if shop.accepts_delivery %}<span class="ks-badge"><i data-lucide="truck"></i>{{ t('shop.delivery_fee', base=shop.courier_base_fee|inr, km=shop.courier_per_km|inr) }}</span>{% endif %}
+  {% if shop.accepts_pickup %}<span class="ks-badge info"><i data-lucide="hand-coins"></i>{{ t('shop.pickup') }}</span>{% endif %}
+  <span class="ks-badge gold"><i data-lucide="banknote"></i>{{ t('shop.cod_only_badge') }}</span>
+  {% if shop.status != 'open' %}<span class="ks-badge danger">{{ t('status.closed') }}</span>{% endif %}
+</div>
+{% endblock %}

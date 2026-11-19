@@ -1,0 +1,27 @@
+<section class="ks-panel ornate">{{ m.corners() }}
+  <div class="ks-between"><h2 class="ks-title ks-h3 m-0">{{ t('farm.payroll') }}</h2><span class="ks-badge gold">{{ t('farm.billing_due', date=billing_due|d) }}</span></div>
+  <p class="ks-small ks-muted">{{ t('farm.payroll_help', pct=cfg.holiday_premium_pct) }}</p>
+  <div class="ks-table-wrap"><table class="ks-table">
+    <thead><tr><th>{{ t('field.name') }}</th><th>{{ t('field.salary') }}</th><th>{{ t('farm.earned') }}</th><th>TDS</th><th>{{ t('dash.paid') }}</th><th>{{ t('dash.due') }}</th><th>{{ t('dash.overdue') }}</th><th></th></tr></thead>
+    <tbody>
+    {% for r in rows if r.money.due > 0 or r.member.status != 'ended' %}
+      {% set mm = r.money %}
+      <tr>
+        <td>{{ r.name }}<div class="ks-small ks-muted">{{ t('role.' ~ r.member.role) }} · {{ m.status_badge(t, r.member.status) }}</div></td>
+        <td>{{ r.member.salary_amount|inr }}/{{ t('salary.' ~ r.member.salary_type) }}</td>
+        <td>{{ mm.gross|inr }}{% if mm.adjustments > 0 %}<div class="ks-small">+{{ mm.adjustments|inr }} {{ t('farm.compensation') }}</div>{% endif %}</td>
+        <td>{{ mm.tds|inr }}</td>
+        <td>{{ mm.paid|inr }}</td>
+        <td><strong>{{ mm.due|inr }}</strong></td>
+        <td>{% if mm.overdue > 0 %}<span class="ks-badge danger">{{ mm.overdue|inr }}</span>{% else %}—{% endif %}</td>
+        <td>{% if perms.payroll and mm.due > 0 %}<button class="ks-btn ks-btn-sm" data-pay-member="{{ r.member.id }}" data-name="{{ r.name }}" data-due="{{ mm.due|inr }}"><i data-lucide="receipt-indian-rupee"></i>{{ t('farm.pay') }}</button>{% endif %}</td>
+      </tr>
+    {% else %}<tr><td colspan="8">{{ m.empty(t('farm.no_team'), 'users') }}</td></tr>{% endfor %}
+    </tbody>
+  </table></div>
+  <div class="ks-alert info mt-3"><i data-lucide="scan-text"></i><div class="ks-small">{{ t('farm.pay_rule') }}</div></div>
+</section>
+<section class="ks-panel mt-4">
+  <h2 class="ks-title ks-h3">{{ t('farm.recent_payments') }}</h2>
+  <ul class="ks-list">{% for p in payments %}<li class="ks-between"><span>{{ p.created_at|dt }} · {{ p.employee_name }} · {{ t('pay.' ~ p.method) }} · {{ t('farm.by', name=p.recorded_by_name) }}</span><span><strong>{{ p.amount|inr }}</strong> <a href="/payments/{{ p.id }}">{{ t('dash.proof') }}</a></span></li>{% else %}<li>{{ t('farm.no_payments') }}</li>{% endfor %}</ul>
+</section>

@@ -1,0 +1,26 @@
+<section class="ks-panel ornate">{{ m.corners() }}
+<div class="ks-table-wrap"><table class="ks-table">
+  <thead><tr><th>{{ t('policies.farm') }}</th><th>{{ t('admin.owner') }}</th><th>{{ t('field.status') }}</th><th>{{ t('dash.due') }}</th><th></th></tr></thead>
+  <tbody>{% for f, oname, ophone in rows %}{% set d = dues[f.id] %}<tr>
+    <td><a href="/f/{{ f.id }}">{{ f.name }}</a><div class="ks-small ks-muted">{{ f.gstin }} · {{ f.created_at|d }}</div></td>
+    <td>{{ oname }}<div class="ks-small"><a href="tel:{{ ophone }}">{{ ophone }}</a></div>
+      {% set gn = gst_names.get(f.id) %}{% if gn and gn[0] %}<div class="ks-small ks-muted">{{ t('admin.gst_name') }}: {{ gn[0] }}</div>
+      {% if gn[1] == false and f.status == 'pending_approval' %}<span class="ks-badge warning">{{ t('admin.gst_name_differs') }}</span>{% endif %}{% endif %}</td>
+    <td>{{ m.status_badge(t, f.status) }}</td>
+    <td>{{ d.due|inr }}{% if d.overdue > 0 %}<div class="ks-badge danger">{{ d.overdue|inr }}</div>{% endif %}</td>
+    <td class="whitespace-nowrap">
+      {% if f.status == 'pending_approval' %}
+        <button class="ks-btn ks-btn-sm" data-action="admin.farm.approve" data-payload='{{ {"farm_id": f.id|string}|tojson }}'>{{ t('common.approve') }}</button>
+        <button class="ks-btn ks-btn-ghost ks-btn-sm" data-action="admin.farm.reject" data-payload='{{ {"farm_id": f.id|string}|tojson }}' data-prompt="js.prompt_reason" data-prompt-field="reason">{{ t('common.reject') }}</button>
+      {% endif %}
+      {% if f.status == 'banned' %}
+        <button class="ks-btn ks-btn-sm" data-action="admin.farm.ban" data-payload='{{ {"farm_id": f.id|string, "unban": true}|tojson }}' data-prompt="js.prompt_note" data-prompt-field="reason">{{ t('admin.unban') }}</button>
+      {% elif f.status not in ('closed', 'rejected') %}
+        <button class="ks-btn ks-btn-danger ks-btn-sm" data-action="admin.farm.ban" data-payload='{{ {"farm_id": f.id|string}|tojson }}' data-prompt="js.prompt_reason" data-prompt-field="reason">{{ t('admin.ban') }}</button>
+      {% endif %}
+      {% if f.status != 'closed' %}<button class="ks-btn ks-btn-ghost ks-btn-sm" data-action="admin.farm.delete" data-payload='{{ {"farm_id": f.id|string}|tojson }}' data-prompt="js.prompt_reason" data-prompt-field="reason" title="{{ t('admin.delete_rule') }}">{{ t('common.delete') }}</button>{% endif %}
+    </td></tr>
+  {% else %}<tr><td colspan="5">{{ t('admin.none') }}</td></tr>{% endfor %}</tbody>
+</table></div>
+<p class="ks-small ks-muted">{{ t('admin.delete_rule') }}</p>
+</section>

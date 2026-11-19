@@ -1,0 +1,33 @@
+<svg class="ks-planet" viewBox="0 0 400 400" role="img" aria-label="{{ t('home.planet_alt') }}">
+  <defs>
+    <radialGradient id="pl-body" cx="38%" cy="32%" r="72%">
+      <stop offset="0" stop-color="#9ff7c9"/><stop offset=".45" stop-color="#27b07a"/><stop offset=".8" stop-color="#0d5a3f"/><stop offset="1" stop-color="#06301f"/>
+    </radialGradient>
+    <radialGradient id="pl-glow" cx="50%" cy="50%" r="50%"><stop offset=".6" stop-color="#5cf0b0" stop-opacity=".0"/><stop offset=".85" stop-color="#5cf0b0" stop-opacity=".35"/><stop offset="1" stop-color="#5cf0b0" stop-opacity="0"/></radialGradient>
+    <linearGradient id="pl-ring" x1="0" x2="1"><stop offset="0" stop-color="#b8872a" stop-opacity=".2"/><stop offset=".5" stop-color="#f6d983"/><stop offset="1" stop-color="#b8872a" stop-opacity=".2"/></linearGradient>
+    <clipPath id="pl-clip"><circle cx="200" cy="200" r="118"/></clipPath>
+    <radialGradient id="pl-shade" cx="70%" cy="78%" r="80%"><stop offset="0" stop-color="#021a10" stop-opacity=".45"/><stop offset=".55" stop-color="#021a10" stop-opacity=".12"/><stop offset="1" stop-color="#021a10" stop-opacity="0"/></radialGradient>
+  </defs>
+  <circle class="glow" cx="200" cy="200" r="175" fill="url(#pl-glow)"/>
+  <g class="ring"><ellipse cx="200" cy="205" rx="185" ry="46" fill="none" stroke="url(#pl-ring)" stroke-width="6" transform="rotate(-16 200 205)" opacity=".55"/></g>
+  <circle cx="200" cy="200" r="118" fill="url(#pl-body)" stroke="#f6d983" stroke-width="2"/>
+  <g clip-path="url(#pl-clip)">
+    <g class="spin" opacity=".85">
+      <path d="M120 150c20-30 70-40 90-20s-10 50-40 52-70-2-50-32z" fill="#d6ffe8" opacity=".55"/>
+      <path d="M210 230c30-10 80 0 84 30s-40 40-70 30-44-50-14-60z" fill="#c4f7d9" opacity=".5"/>
+      <path d="M150 260c10-14 40-14 46 0s-14 30-30 28-24-14-16-28z" fill="#e2ffef" opacity=".45"/>
+      <path d="M250 120c18-8 44 2 40 20s-30 20-44 12-12-24 4-32z" fill="#bff2d4" opacity=".5"/>
+      <g fill="none" stroke="#0a4a33" stroke-width="2" opacity=".55">
+        <path d="M160 180c8-10 22-16 34-16"/><path d="M240 250c10-6 24-8 36-4"/>
+      </g>
+    </g>
+    <circle cx="200" cy="200" r="118" fill="url(#pl-shade)"/>
+  </g>
+  <g transform="translate(196 92)">
+    <path d="M4 40c0-20 6-34 18-42-2 16-8 30-18 42z" fill="#7df0b5" stroke="#0a4a33" stroke-width="1.5"/>
+    <path d="M4 40c-1-16-8-26-20-32 2 14 10 26 20 32z" fill="#a8f7cd" stroke="#0a4a33" stroke-width="1.5"/>
+    <path d="M4 40v-6" stroke="#0a4a33" stroke-width="2"/>
+  </g>
+  <g class="ring"><path d="M28 230c90 50 260 40 350-40" fill="none" stroke="url(#pl-ring)" stroke-width="6" transform="rotate(-16 200 205)"/></g>
+  <g fill="#f6d983"><circle cx="70" cy="90" r="3"/><circle cx="335" cy="70" r="2"/><circle cx="350" cy="310" r="3"/><circle cx="45" cy="300" r="2"/></g>
+</svg>

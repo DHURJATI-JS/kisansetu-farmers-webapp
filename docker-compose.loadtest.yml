@@ -1,0 +1,15 @@
+# Multi-worker production-like run (Linux container) for load tests:
+#   docker compose -f docker-compose.yml -f docker-compose.loadtest.yml --profile full up -d --build app
+#   python scripts/run_loadtest.py --mode stress --seed --host http://127.0.0.1:8089 --docker kisansetu-app-1
+services:
+  app:
+    ports: !override
+      - "127.0.0.1:8089:8088"
+    environment:
+      WEB_CONCURRENCY: "4"
+      DB_POOL_SIZE: "8"
+      BASE_URL: "http://127.0.0.1:8089"
+      # Docker Desktop forwards host connections from the bridge gateway: trust it to pass the client IP (X-Forwarded-For)
+      TRUSTED_PROXIES: "127.0.0.1,172.16.0.0/12,192.168.0.0/16"
+      # the load-test sampler reads /internal/metrics through the same gateway (never via a forwarded request)
+      METRICS_ALLOW: "127.0.0.1/32,172.16.0.0/12,192.168.0.0/16"

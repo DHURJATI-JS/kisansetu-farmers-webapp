@@ -1,0 +1,1 @@
+<nav class="ks-tabs mt-3" aria-label="{{ t('admin.sections') }}">{% for x in tabs %}<a href="/admin?tab={{ x }}" class="{{ 'active' if x == tab }}">{{ t('admin.tab.' ~ x) }}</a>{% endfor %}<a href="/admin/production-test" class="{{ 'active' if tab == 'production' }}">{{ t('admin.tab.production') }}</a></nav>

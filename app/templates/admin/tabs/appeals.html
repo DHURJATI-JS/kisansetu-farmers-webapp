@@ -1,0 +1,11 @@
+{% for a, name, phone, reason in appeals %}
+<section class="ks-panel mb-3">
+  <div class="ks-between"><strong>{{ name }} · <a href="tel:{{ phone }}">{{ phone }}</a></strong><span class="ks-badge {{ 'warn' if a.status == 'pending' else '' }}">{{ t('banned.appeal_status.' ~ a.status) }}</span></div>
+  <p class="ks-small ks-muted">{{ t('admin.ban_reason') }}: {{ reason or '—' }} · {{ a.created_at|dt }}</p>
+  <p class="whitespace-pre-wrap" data-translate>{{ a.message }}</p>
+  {% if a.status == 'pending' %}<div class="ks-row">
+    <button class="ks-btn ks-btn-sm" data-action="admin.unban.decide" data-payload='{{ {"request_id": a.id|string, "approve": true}|tojson }}' data-prompt="js.prompt_note">{{ t('common.approve') }}</button>
+    <button class="ks-btn ks-btn-danger ks-btn-sm" data-action="admin.unban.decide" data-payload='{{ {"request_id": a.id|string, "approve": false}|tojson }}' data-prompt="js.prompt_note">{{ t('common.reject') }}</button></div>
+  {% elif a.decision_note %}<p class="ks-small">{{ t('admin.note') }}: {{ a.decision_note }}</p>{% endif %}
+</section>
+{% else %}{{ m.empty(t('admin.none'), 'scale') }}{% endfor %}

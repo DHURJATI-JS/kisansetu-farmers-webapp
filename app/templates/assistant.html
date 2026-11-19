@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% import "partials/_macros.html" as m with context %}
+{% block title %}{{ t('nav.assistant') }}{% endblock %}
+{% block ai_widget %}{% endblock %}
+{% block content %}
+<div class="ks-ai-page">
+  <h1 class="ks-title ks-h1">{{ t('ai.title') }}</h1>
+  <p class="ks-muted">{{ t('ai.page_lead') }}</p>
+  <section class="ks-panel ornate ks-ai-panel" data-ai-embedded>{% set ai_id = 'page' %}{% include "partials/_ai_body.html" %}</section>
+  <div class="ks-alert info mt-4"><i data-lucide="shield-check"></i><div class="ks-small">{{ t('ai.safety_note') }}</div></div>
+</div>
+{% endblock %}

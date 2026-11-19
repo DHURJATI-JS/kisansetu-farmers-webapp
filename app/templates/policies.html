@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% import "partials/_macros.html" as m with context %}
+{% block title %}{{ t('nav.policies') }}{% endblock %}
+{% block content %}
+<h1 class="ks-title ks-h1">{{ t('policies.title') }}</h1>
+<p class="ks-muted">{{ t('policies.lead') }}</p>
+<div class="ks-row mb-4"><a class="ks-chip" href="/legal/terms">{{ t('legal.terms.title') }}</a><a class="ks-chip" href="/legal/privacy">{{ t('legal.privacy.title') }}</a><a class="ks-chip" href="/legal/disclaimer">{{ t('legal.disclaimer.title') }}</a></div>
+<section class="ks-panel ornate">{{ m.corners() }}
+  <div class="ks-table-wrap"><table class="ks-table">
+    <thead><tr><th>{{ t('policies.farm') }}</th><th>{{ t('field.policy_type') }}</th><th>{{ t('field.insurer') }}</th><th>{{ t('field.sum_insured') }}</th><th>{{ t('policies.validity') }}</th><th></th></tr></thead>
+    <tbody>{% for p, fname, fid in rows %}<tr>
+      <td><a href="/f/{{ fid }}">{{ fname }}</a></td><td>{{ t('insurance.' ~ p.policy_type) }}</td><td>{{ p.insurer }}<div class="ks-small ks-muted">{{ p.policy_number }}</div></td>
+      <td>{{ p.sum_insured|inr }}</td><td>{{ p.valid_from|d }} → {{ p.valid_to|d }}</td>
+      <td>{% if p.upload_id %}<a class="ks-btn ks-btn-ghost ks-btn-sm" href="/media/{{ p.upload_id }}" target="_blank" rel="noopener"><i data-lucide="file-text"></i>{{ t('farm.view_document') }}</a>{% endif %}</td></tr>
+    {% else %}<tr><td colspan="6">{{ m.empty(t('farm.no_policies'), 'file-check') }}</td></tr>{% endfor %}</tbody>
+  </table></div>
+  <div class="ks-row mt-3">{% if page > 1 %}<a class="ks-btn ks-btn-ghost" href="?page={{ page - 1 }}">{{ t('common.prev') }}</a>{% endif %}{% if has_more %}<a class="ks-btn ks-btn-ghost" href="?page={{ page + 1 }}">{{ t('common.next') }}</a>{% endif %}</div>
+</section>
+{% endblock %}

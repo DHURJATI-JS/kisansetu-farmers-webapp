@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% import "partials/_macros.html" as m with context %}
+{% block title %}{{ t('legal.' ~ doc ~ '.title') }}{% endblock %}
+{% block content %}
+<article class="ks-panel ornate max-w-3xl mx-auto" id="legal-doc">{{ m.corners() }}
+  <div class="ks-between"><h1 class="ks-title ks-h1 m-0">{{ t('legal.' ~ doc ~ '.title') }}</h1>
+    <button type="button" class="ks-btn ks-btn-ghost ks-btn-sm" data-speak="#legal-doc"><i data-lucide="volume-2"></i>{{ t('common.listen') }}</button></div>
+  <p class="ks-small ks-muted">{{ t('legal.updated') }}</p>
+  {% set counts = {'terms': 14, 'privacy': 12, 'disclaimer': 9, 'accessibility': 6} %}
+  <ol class="ks-stack">
+    {% for i in range(1, counts[doc] + 1) %}<li>{{ t('legal.' ~ doc ~ '.' ~ i) }}</li>{% endfor %}
+  </ol>
+  {% if doc == 'terms' %}
+  <h2 class="ks-title ks-h3 mt-6">{{ t('legal.terms.farm_boiler') }}</h2>
+  <ol class="ks-small">{% for k in boiler_keys %}<li>{{ t(k, pct=10, hours=8, days=30) }}</li>{% endfor %}</ol>
+  {% endif %}
+</article>
+{% endblock %}

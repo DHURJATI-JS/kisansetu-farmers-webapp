@@ -1,0 +1,43 @@
+<div class="ks-alert info"><i data-lucide="users"></i><div>{{ t('farm.consensus_note') }}</div></div>
+{% if perms.settings %}
+<div class="ks-grid cols-2">
+  <section class="ks-panel ornate">{{ m.corners() }}
+    <h2 class="ks-title ks-h3">{{ t('farm.rename') }}</h2>
+    <form data-action-form="farm.rename" data-payload='{{ {"farm_id": farm.id|string}|tojson }}'>
+      {{ m.field('name', t('field.farm_name'), value=farm.name, required=True, attrs='maxlength="120"', id='rn-name') }}
+      <button class="ks-btn" type="submit">{{ t('common.propose') }}</button>
+    </form>
+  </section>
+  <section class="ks-panel ornate">{{ m.corners() }}
+    <h2 class="ks-title ks-h3">{{ t('farm.settings') }}</h2>
+    <form data-action-form="farm.update_settings" data-payload='{{ {"farm_id": farm.id|string}|tojson }}'>
+      {{ m.field('hiring_limit', t('field.hiring_limit'), type='number', dtype='int', value=farm.hiring_limit, attrs='min="1" max="10000"', id='st-limit') }}
+      {{ m.field('pay_day', t('field.pay_day'), type='number', dtype='int', value=farm.pay_day, attrs='min="1" max="' ~ cfg.billing_day ~ '"', id='st-payday', help=t('help.pay_day', billing=cfg.billing_day)) }}
+      {{ m.select('payment_method', t('field.payment_method'), [('upi', t('pay.upi')), ('bank', t('pay.bank')), ('cash', t('pay.cash'))], farm.payment_method, id='st-method') }}
+      {{ m.select('farming_type', t('field.farming_type'), [('intensive', t('farming.intensive')), ('extensive', t('farming.extensive')), ('plantation', t('farming.plantation')), ('organic', t('farming.organic')), ('mixed', t('farming.mixed')), ('horticulture', t('farming.horticulture')), ('dryland', t('farming.dryland')), ('agroforestry', t('farming.agroforestry')), ('subsistence', t('farming.subsistence')), ('hydroponic', t('farming.hydroponic'))], farm.farming_type, id='st-type') }}
+      <button class="ks-btn" type="submit">{{ t('common.propose') }}</button>
+    </form>
+  </section>
+  <section class="ks-panel ornate">{{ m.corners() }}
+    <h2 class="ks-title ks-h3">{{ t('farm.terms') }}</h2>
+    <p class="ks-small ks-muted">{{ t('farm.terms_current', mode=t('farm.terms_mode.' ~ farm.terms_mode), version=farm.terms_version) }}</p>
+    {% if terms_blocked %}<div class="ks-alert danger" role="alert"><i data-lucide="octagon-alert"></i><div><strong>{{ t('farm.terms_blocked') }}</strong>
+      <ul class="ks-list ks-small mt-1">{% for i in terms_blocked %}<li>“{{ i.clause }}” — {{ t('terms.rule.' ~ i.code) }}</li>{% endfor %}</ul></div></div>{% endif %}
+    <form data-action-form="farm.update_terms" data-payload='{{ {"farm_id": farm.id|string}|tojson }}'>
+      <label class="ks-check"><input type="radio" name="terms_mode" value="boilerplate" {% if farm.terms_mode != 'custom' %}checked{% endif %}><span>{{ t('farmnew.terms_boiler') }}</span></label>
+      <label class="ks-check"><input type="radio" name="terms_mode" value="custom" {% if farm.terms_mode == 'custom' %}checked{% endif %}><span>{{ t('farmnew.terms_custom') }}</span></label>
+      <textarea class="ks-textarea mt-2" name="terms_text" id="st-terms" rows="8" maxlength="8000" data-optional>{{ farm.terms_text or '' }}</textarea>
+      <div class="ks-row mt-2"><button type="button" class="ks-btn ks-btn-ghost" data-terms-check="#st-terms" data-out="#st-terms-out"><i data-lucide="scale"></i>{{ t('farmnew.terms_check') }}</button>
+        <button class="ks-btn" type="submit">{{ t('common.propose') }}</button></div>
+      <div id="st-terms-out" class="mt-2"></div>
+    </form>
+  </section>
+  <section class="ks-panel ornate">{{ m.corners() }}
+    <h2 class="ks-title ks-h3 text-red-600">{{ t('farm.close_farm') }}</h2>
+    <p class="ks-small">{{ t('farm.close_help', days=cfg.notice_days) }}</p>
+    {% if farm.status == 'active' %}<button class="ks-btn ks-btn-danger" data-action="farm.close" data-payload='{{ {"farm_id": farm.id|string}|tojson }}' data-prompt="js.prompt_reason" data-prompt-field="reason"><i data-lucide="calendar-x"></i>{{ t('farm.start_closure') }}</button>{% endif %}
+  </section>
+</div>
+{% else %}
+<p>{{ t('errors.no_farm_permission') }}</p>
+{% endif %}

@@ -1,0 +1,132 @@
+{% extends "base.html" %}
+{% import "partials/_macros.html" as m with context %}
+{% block title %}{{ t('farmnew.title') }}{% endblock %}
+{% block head %}<link rel="stylesheet" href="{{ vendor('leaflet/leaflet.css', 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css') }}" crossorigin="anonymous">{% endblock %}
+{% block content %}
+<h1 class="ks-title ks-h1">{{ t('farmnew.title') }}</h1>
+<p class="ks-muted">{{ t('farmnew.lead', sla=cfg.approval_sla_hours) }}</p>
+{% if TEST_MODE %}<div class="ks-alert warn"><i data-lucide="flask-conical"></i><div>{{ t('farmnew.test_mode') }}</div></div>{% endif %}
+
+<form id="farm-new" class="ks-stack" novalidate>
+  {# 1 — GSTIN #}
+  <section class="ks-panel ornate">{{ m.corners() }}
+    <h2 class="ks-title ks-h2">1 · {{ t('farmnew.s_gstin') }}</h2>
+    <p class="ks-small ks-muted">{{ t('farmnew.gstin_help') }}</p>
+    <div id="gstin-list" class="ks-stack">
+      {% for g in gstins %}
+      <label class="ks-check ks-card"><input type="radio" name="gstin_verification_id" value="{{ g.id }}" {% if g.status != 'verified' %}disabled{% endif %} {% if loop.first and g.status == 'verified' %}checked{% endif %}>
+        <span><strong>{{ g.gstin }}</strong> {{ m.status_badge(t, g.status) }} <span class="ks-small ks-muted">{{ g.legal_name or '' }}</span>
+          {% if g.status == 'pending' %}<button type="button" class="ks-btn ks-btn-sm ms-2" data-action="gstin.verify" data-payload='{{ {"verification_id": g.id|string}|tojson }}'>{{ t('farmnew.verify_now') }}</button>{% endif %}</span></label>
+      {% endfor %}
+    </div>
+    <div class="ks-card mt-3">
+      <label class="ks-label" for="gst-file">{{ t('farmnew.upload_certificate') }}</label>
+      <input id="gst-file" type="file" accept="image/*,application/pdf" class="ks-input">
+      <button type="button" class="ks-btn ks-btn-ghost ks-btn-sm mt-2" data-camera="#gst-file" data-facing="environment"><i data-lucide="camera"></i>{{ t('camera.live_doc') }}</button>
+      {% if TEST_MODE %}{{ m.field('manual_gstin', t('farmnew.manual_gstin'), id='gst-manual', attrs='maxlength="15" autocapitalize="characters" data-skip', help=t('farmnew.manual_help')) }}{% endif %}
+      <button type="button" class="ks-btn mt-2" id="gst-scan"><i data-lucide="scan-text"></i>{{ t('farmnew.scan') }}</button>
+      <div id="gst-result" class="mt-2" aria-live="polite"></div>
+    </div>
+  </section>
+
+  {# 2 — main branch #}
+  <section class="ks-panel ornate">{{ m.corners() }}
+    <h2 class="ks-title ks-h2">2 · {{ t('farmnew.s_branch') }}</h2>
+    {{ m.field('branch.name', t('field.branch_name'), required=True, value=t('farmnew.main_branch'), attrs='maxlength="120"') }}
+    <div class="ks-field"><span class="ks-label">{{ t('field.location') }}</span>
+      <div id="branch-map" class="ks-map" data-map-picker data-lat="#b-lat" data-lon="#b-lon" data-start-lat="{{ user.lat or 22.5 }}" data-start-lon="{{ user.lon or 79 }}"></div>
+      <div class="ks-row mt-2"><button type="button" class="ks-btn ks-btn-ghost ks-btn-sm" data-map-locate="#branch-map"><i data-lucide="locate-fixed"></i>{{ t('farmnew.use_my_location') }}</button>
+        <span class="ks-small ks-muted">{{ t('farmnew.map_help') }}</span></div>
+      <input type="hidden" id="b-lat" name="branch.lat" data-type="number" required>
+      <input type="hidden" id="b-lon" name="branch.lon" data-type="number" required>
+    </div>
+    <div class="ks-grid cols-2">
+      {{ m.field('branch.address', t('field.address'), attrs='maxlength="300"', optional=True) }}
+      {{ m.field('branch.area_acres', t('field.area_acres'), type='number', dtype='number', attrs='min="0" step="0.01"', optional=True) }}
+      {{ m.field('branch.work_start', t('field.work_start'), type='time', value='08:00', required=True) }}
+      {{ m.field('branch.work_end', t('field.work_end'), type='time', value='16:00', required=True, help=t('help.max_hours', h=cfg.max_work_hours)) }}
+    </div>
+    <fieldset class="ks-field"><legend class="ks-label">{{ t('field.weekly_offs') }}</legend>
+      <div class="ks-row">{% for d in range(7) %}<label class="ks-chip"><input type="checkbox" name="branch.weekly_offs" value="{{ d }}" data-type="intlist" {% if d == 6 %}checked{% endif %}>{{ t(['day.mon','day.tue','day.wed','day.thu','day.fri','day.sat','day.sun'][d]) }}</label>{% endfor %}</div>
+      <span class="ks-help">{{ t('help.holiday_premium', pct=cfg.holiday_premium_pct) }}</span>
+    </fieldset>
+  </section>
+
+  {# 3 — farm details #}
+  <section class="ks-panel ornate">{{ m.corners() }}
+    <h2 class="ks-title ks-h2">3 · {{ t('farmnew.s_details') }}</h2>
+    {{ m.field('name', t('field.farm_name'), required=True, attrs='maxlength="120"') }}
+    {{ m.field('description', t('field.description'), type='textarea', optional=True, attrs='maxlength="2000"') }}
+    <div class="ks-grid cols-2">
+      {{ m.select('farming_type', t('field.farming_type'), [('intensive', t('farming.intensive')), ('extensive', t('farming.extensive')), ('plantation', t('farming.plantation')), ('organic', t('farming.organic')), ('mixed', t('farming.mixed')), ('horticulture', t('farming.horticulture')), ('dryland', t('farming.dryland')), ('agroforestry', t('farming.agroforestry')), ('subsistence', t('farming.subsistence')), ('hydroponic', t('farming.hydroponic'))], 'mixed', id='f-farming-type') }}
+      {{ m.field('hiring_limit', t('field.hiring_limit'), type='number', dtype='int', value=20, required=True, attrs='min="1" max="10000"') }}
+      {{ m.field('pay_day', t('field.pay_day'), type='number', dtype='int', value=cfg.billing_day, required=True, attrs='min="1" max="' ~ cfg.billing_day ~ '"', help=t('help.pay_day', billing=cfg.billing_day)) }}
+      {{ m.select('payment_method', t('field.payment_method'), [('upi', t('pay.upi')), ('bank', t('pay.bank')), ('cash', t('pay.cash'))], 'upi') }}
+    </div>
+    <button type="button" class="ks-btn ks-btn-gold" id="ai-recommend"><i data-lucide="sparkles"></i>{{ t('farmnew.ai_recommend') }}</button>
+    <div id="ai-recommend-out" class="mt-3" aria-live="polite"></div>
+  </section>
+
+  {# 4 — crops #}
+  <section class="ks-panel ornate">{{ m.corners() }}
+    <h2 class="ks-title ks-h2">4 · {{ t('farmnew.s_crops') }}</h2>
+    <p class="ks-small ks-muted">{{ t('farmnew.crops_help') }}</p>
+    <datalist id="crop-names">{% for c in crops %}<option value="{{ c.name }}">{{ c.hi }}</option>{% endfor %}</datalist>
+    <div id="crop-rows" class="ks-stack"></div>
+    <button type="button" class="ks-btn ks-btn-ghost ks-btn-sm" id="crop-add"><i data-lucide="plus"></i>{{ t('farmnew.add_crop') }}</button>
+  </section>
+
+  {# 5 — insurance #}
+  <section class="ks-panel ornate">{{ m.corners() }}
+    <h2 class="ks-title ks-h2">5 · {{ t('farmnew.s_insurance') }}</h2>
+    <p class="ks-small ks-muted">{{ t('farmnew.insurance_help') }}</p>
+    <div id="ins-rows" class="ks-stack"></div>
+    <button type="button" class="ks-btn ks-btn-ghost ks-btn-sm" id="ins-add"><i data-lucide="plus"></i>{{ t('farmnew.add_policy') }}</button>
+  </section>
+
+  {# 6 — terms #}
+  <section class="ks-panel ornate">{{ m.corners() }}
+    <h2 class="ks-title ks-h2">6 · {{ t('farmnew.s_terms') }}</h2>
+    <label class="ks-check"><input type="radio" name="terms_mode" value="boilerplate" checked><span>{{ t('farmnew.terms_boiler') }}</span></label>
+    <details class="ks-card my-2"><summary>{{ t('farmnew.terms_read') }}</summary><ol class="ks-small">{% for k in boiler_keys %}<li>{{ t(k, pct=cfg.holiday_premium_pct, hours=cfg.max_work_hours, days=cfg.notice_days) }}</li>{% endfor %}</ol></details>
+    <label class="ks-check"><input type="radio" name="terms_mode" value="custom"><span>{{ t('farmnew.terms_custom') }}</span></label>
+    <div id="terms-custom" class="ks-hidden mt-2">
+      <textarea class="ks-textarea" name="terms_text" id="terms-text" maxlength="8000" rows="8" data-optional placeholder="{{ t('farmnew.terms_placeholder') }}"></textarea>
+      <button type="button" class="ks-btn ks-btn-gold mt-2" id="terms-check"><i data-lucide="scale"></i>{{ t('farmnew.terms_check') }}</button>
+      <div id="terms-result" class="mt-2" aria-live="polite"></div>
+    </div>
+  </section>
+
+  {# 7 — submit #}
+  <section class="ks-panel ornate">{{ m.corners() }}
+    <label class="ks-check"><input type="checkbox" name="accept_platform_terms" required><span>{{ t('farmnew.accept_platform') }} <a href="/legal/terms" target="_blank" rel="noopener">{{ t('legal.terms.title') }}</a></span></label>
+    <button type="submit" class="ks-btn ks-btn-go ks-btn-xl mt-4"><i data-lucide="sparkles"></i>{{ t('farmnew.review_create') }}</button>
+  </section>
+</form>
+
+<template id="tpl-crop"><div class="ks-card grid gap-2 sm:grid-cols-5 items-end" data-crop-row>
+  <div class="ks-field sm:col-span-2 m-0"><label class="ks-label">{{ t('field.crop') }}</label><input class="ks-input" list="crop-names" data-k="name" maxlength="80" required></div>
+  <div class="ks-field m-0"><label class="ks-label">{{ t('field.variety') }}</label><input class="ks-input" data-k="variety" maxlength="80"></div>
+  <div class="ks-field m-0"><label class="ks-label">{{ t('field.area_acres') }}</label><input class="ks-input" data-k="area_acres" type="number" min="0" step="0.01"></div>
+  <div class="ks-field m-0"><label class="ks-label">{{ t('field.planted_on') }}</label><input class="ks-input" data-k="planted_on" type="date"></div>
+  <button type="button" class="ks-btn ks-btn-ghost ks-btn-sm" data-remove-row>{{ t('common.remove') }}</button>
+</div></template>
+
+<template id="tpl-ins"><div class="ks-card grid gap-2 sm:grid-cols-4" data-ins-row>
+  <div class="ks-field m-0"><label class="ks-label">{{ t('field.policy_type') }}</label><select class="ks-select" data-k="policy_type">
+    {% for p in ['salary','health','comprehensive','crop','field','accident','equipment','livestock'] %}<option value="{{ p }}">{{ t('insurance.' ~ p) }}</option>{% endfor %}</select></div>
+  <div class="ks-field m-0"><label class="ks-label">{{ t('field.insurer') }}</label><input class="ks-input" data-k="insurer" maxlength="120" required></div>
+  <div class="ks-field m-0"><label class="ks-label">{{ t('field.policy_number') }}</label><input class="ks-input" data-k="policy_number" maxlength="64" required></div>
+  <div class="ks-field m-0"><label class="ks-label">{{ t('field.sum_insured') }}</label><input class="ks-input" data-k="sum_insured" type="number" min="1" step="0.01" required></div>
+  <div class="ks-field m-0"><label class="ks-label">{{ t('field.valid_from') }}</label><input class="ks-input" data-k="valid_from" type="date" required></div>
+  <div class="ks-field m-0"><label class="ks-label">{{ t('field.valid_to') }}</label><input class="ks-input" data-k="valid_to" type="date" required></div>
+  <div class="ks-field m-0"><label class="ks-label">{{ t('field.policy_document') }}</label><input class="ks-input" data-k="file" type="file" accept="image/*,application/pdf" required><button type="button" class="ks-btn ks-btn-ghost ks-btn-sm mt-2" data-camera data-facing="environment"><i data-lucide="camera"></i>{{ t('camera.live_doc') }}</button></div>
+  <label class="ks-check self-center"><input type="checkbox" data-k="covers_salaries"><span>{{ t('field.covers_salaries') }}</span></label>
+  <button type="button" class="ks-btn ks-btn-ghost ks-btn-sm" data-remove-row>{{ t('common.remove') }}</button>
+</div></template>
+{% endblock %}
+{% block scripts %}
+<script nonce="{{ csp_nonce }}" src="{{ vendor('leaflet/leaflet.js', 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js') }}"></script>
+<script nonce="{{ csp_nonce }}" src="{{ asset('js/map.js') }}"></script>
+<script nonce="{{ csp_nonce }}" src="{{ asset('js/pages/farm_new.js') }}"></script>
+{% endblock %}

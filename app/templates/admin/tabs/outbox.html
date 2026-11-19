@@ -1,0 +1,10 @@
+<p class="ks-muted">{{ t('admin.outbox_help') }}</p>
+<section class="ks-panel ornate">{{ m.corners() }}
+<div class="ks-table-wrap"><table class="ks-table">
+  <thead><tr><th>{{ t('admin.when') }}</th><th>{{ t('admin.channel') }}</th><th>{{ t('admin.to') }}</th><th>{{ t('admin.message') }}</th><th>{{ t('field.status') }}</th></tr></thead>
+  <tbody>{% for msg in messages %}<tr><td class="ks-small">{{ msg.created_at|dt }}</td><td>{{ msg.channel }}</td><td class="ks-small">{{ msg.to }}</td>
+    <td class="ks-small whitespace-pre-wrap">{% if msg.subject %}<strong>{{ msg.subject }}</strong><br>{% endif %}{{ msg.body|truncate(400) }}</td>
+    <td><span class="ks-badge {{ 'danger' if msg.status == 'failed' else ('warn' if msg.status == 'simulated' else '') }}">{{ msg.status }}</span>{% if msg.error %}<div class="ks-small">{{ msg.error|truncate(80) }}</div>{% endif %}</td></tr>
+  {% else %}<tr><td colspan="5">{{ t('admin.none') }}</td></tr>{% endfor %}</tbody>
+</table></div>
+</section>

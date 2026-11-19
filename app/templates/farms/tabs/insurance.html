@@ -1,0 +1,29 @@
+<div class="ks-grid cols-2">
+<section class="ks-panel ornate">{{ m.corners() }}
+  <h2 class="ks-title ks-h3">{{ t('farm.policies') }}</h2>
+  <p class="ks-small ks-muted">{{ t('farm.policies_public') }}</p>
+  <ul class="ks-list">
+  {% for p in policies %}
+    <li><div class="ks-between"><strong>{{ t('insurance.' ~ p.policy_type) }}</strong>{{ m.status_badge(t, p.status if p.valid_to >= today else 'expired') }}</div>
+      <div class="ks-small">{{ p.insurer }} · {{ p.policy_number }} · {{ p.sum_insured|inr }}{% if p.covers_salaries %} · {{ t('field.covers_salaries') }}{% endif %}</div>
+      <div class="ks-small ks-muted">{{ p.valid_from|d }} → {{ p.valid_to|d }}{% if p.upload_id %} · <a href="/media/{{ p.upload_id }}" target="_blank" rel="noopener">{{ t('farm.view_document') }}</a>{% endif %}</div></li>
+  {% else %}<li>{{ t('farm.no_policies') }}</li>{% endfor %}
+  </ul>
+  <div class="ks-alert info"><i data-lucide="info"></i><div class="ks-small">{{ t('farm.insurance_tip') }}</div></div>
+</section>
+{% if perms.insurance %}
+<section class="ks-panel ornate">{{ m.corners() }}
+  <h2 class="ks-title ks-h3">{{ t('farm.add_policy') }}</h2>
+  <form id="insurance-form" data-farm="{{ farm.id }}">
+    {{ m.select('policy_type', t('field.policy_type'), [('salary', t('insurance.salary')), ('health', t('insurance.health')), ('comprehensive', t('insurance.comprehensive')), ('crop', t('insurance.crop')), ('field', t('insurance.field')), ('accident', t('insurance.accident')), ('equipment', t('insurance.equipment')), ('livestock', t('insurance.livestock'))], 'comprehensive') }}
+    {{ m.field('insurer', t('field.insurer'), required=True, attrs='maxlength="120"') }}
+    {{ m.field('policy_number', t('field.policy_number'), required=True, attrs='maxlength="64"') }}
+    {{ m.field('sum_insured', t('field.sum_insured'), type='number', dtype='number', required=True, attrs='min="1" step="0.01"') }}
+    <div class="ks-grid cols-2">{{ m.field('valid_from', t('field.valid_from'), type='date', required=True) }}{{ m.field('valid_to', t('field.valid_to'), type='date', required=True) }}</div>
+    <label class="ks-check"><input type="checkbox" name="covers_salaries"><span>{{ t('field.covers_salaries') }}</span></label>
+    <div class="ks-field mt-2"><label class="ks-label" for="ins-file">{{ t('field.policy_document') }}</label><input id="ins-file" type="file" accept="image/*,application/pdf" class="ks-input" required data-skip><button type="button" class="ks-btn ks-btn-ghost ks-btn-sm mt-2" data-camera data-facing="environment"><i data-lucide="camera"></i>{{ t('camera.live_doc') }}</button></div>
+    <button class="ks-btn ks-btn-gold" type="submit"><i data-lucide="shield-plus"></i>{{ t('farm.add_policy') }}</button>
+  </form>
+</section>
+{% endif %}
+</div>

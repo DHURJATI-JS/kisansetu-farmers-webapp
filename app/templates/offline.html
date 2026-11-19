@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% block title %}{{ t('offline.title') }}{% endblock %}
+{% block ai_widget %}{% endblock %}
+{% block content %}
+<section class="ks-panel ornate max-w-md mx-auto text-center mt-10">
+  <i data-lucide="wifi-off" class="w-12 h-12 mx-auto"></i>
+  <h1 class="ks-title ks-h2">{{ t('offline.title') }}</h1>
+  <p>{{ t('offline.body') }}</p>
+  <a class="ks-btn" href="/">{{ t('common.retry') }}</a>
+</section>
+{% endblock %}

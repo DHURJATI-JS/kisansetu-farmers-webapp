@@ -1,0 +1,121 @@
+{% set link_cls = {'ok': '', 'moved': 'warn', 'broken': 'danger', 'unreachable': 'warn', 'insecure': 'danger', 'unverified': 'warn', 'unknown': 'info'} %}
+{% set link_icon = {'ok': 'circle-check', 'moved': 'move-right', 'broken': 'link-2-off', 'unreachable': 'cloud-off', 'insecure': 'shield-alert', 'unverified': 'shield-question', 'unknown': 'circle-help'} %}
+{% macro scheme_form(s=None) %}
+{% set r = (s.rules if s else {}) or {} %}
+<form class="ks-stack mt-3" data-action-form="admin.scheme.save" data-payload='{{ ({"scheme_id": s.id|string} if s else {})|tojson }}'>
+  <div class="ks-grid cols-2">
+    {% if not s %}
+    <div class="ks-field"><label class="ks-label" for="sc-new-slug">{{ t('admin.scheme.slug') }}</label>
+      <input class="ks-input font-mono" id="sc-new-slug" name="slug" required pattern="[a-z][a-z0-9_]{2,47}" maxlength="48" placeholder="state_scheme_name">
+      <span class="ks-help">{{ t('admin.scheme.slug_help') }}</span></div>
+    {% endif %}
+    {% set fid = (s.id|string)[:8] if s else 'new' %}
+    <div class="ks-field"><label class="ks-label" for="sc-{{ fid }}-name">{{ t('scheme.field.name') }}</label>
+      <input class="ks-input" id="sc-{{ fid }}-name" name="name" required minlength="2" maxlength="160" value="{{ s.name if s else '' }}"></div>
+    <div class="ks-field"><label class="ks-label" for="sc-{{ fid }}-url">{{ t('scheme.field.url') }}</label>
+      <input class="ks-input" id="sc-{{ fid }}-url" name="url" type="url" required maxlength="500" pattern="https://.*" value="{{ s.url if s else 'https://' }}">
+      <span class="ks-help">{{ t('admin.scheme.url_help', domains=domains|join(', ')) }}</span></div>
+    <div class="ks-field"><label class="ks-label" for="sc-{{ fid }}-src">{{ t('scheme.field.source_ref') }}</label>
+      <input class="ks-input" id="sc-{{ fid }}-src" name="source_ref" type="url" data-optional maxlength="500" value="{{ s.source_ref or '' if s else '' }}">
+      <span class="ks-help">{{ t('admin.scheme.source_help') }}</span></div>
+  </div>
+  <div class="ks-field"><label class="ks-label" for="sc-{{ fid }}-desc">{{ t('scheme.field.description') }}</label>
+    <textarea class="ks-textarea" id="sc-{{ fid }}-desc" name="description" required minlength="10" maxlength="2000" rows="3">{{ s.description if s else '' }}</textarea></div>
+  <div class="ks-grid cols-2">
+    <fieldset class="ks-field"><legend class="ks-label">{{ t('scheme.field.audience') }}</legend><div class="ks-row">
+      {% for a in ['farmer', 'owner'] %}<label class="ks-chip"><input type="checkbox" name="audience" value="{{ a }}" data-type="list-check" {% if not s or a in (s.audience or []) %}checked{% endif %}>{{ t('role.' ~ a) }}</label>{% endfor %}</div></fieldset>
+    <div class="ks-field"><label class="ks-label" for="sc-{{ fid }}-level">{{ t('scheme.field.level') }}</label>
+      <select class="ks-select" id="sc-{{ fid }}-level" name="level"><option value="central" {% if not s or s.level == 'central' %}selected{% endif %}>{{ t('admin.scheme.central') }}</option>
+        <option value="state" {% if s and s.level == 'state' %}selected{% endif %}>{{ t('admin.scheme.state') }}</option></select></div>
+    <div class="ks-field"><label class="ks-label" for="sc-{{ fid }}-states">{{ t('scheme.field.states') }}</label>
+      <select class="ks-select" id="sc-{{ fid }}-states" name="states" multiple size="5">{% for st in states %}<option value="{{ st }}" {% if s and st in (s.states or []) %}selected{% endif %}>{{ st }}</option>{% endfor %}</select>
+      <span class="ks-help">{{ t('admin.scheme.states_help') }}</span></div>
+  </div>
+  <fieldset class="ks-field"><legend class="ks-label">{{ t('scheme.field.rules') }}</legend>
+    <div class="ks-grid cols-2">
+      {% for k, lbl, step in [('min_age', 'admin.scheme.min_age', '1'), ('max_age', 'admin.scheme.max_age', '1'), ('max_land', 'admin.scheme.max_land', '0.01'), ('max_month_income', 'admin.scheme.max_income', '1')] %}
+      <div class="ks-field m-0"><label class="ks-label" for="sc-{{ fid }}-{{ k }}">{{ t(lbl) }}</label>
+        <input class="ks-input" id="sc-{{ fid }}-{{ k }}" name="rules.{{ k }}" type="number" min="0" step="{{ step }}" data-type="{{ 'int' if step == '1' and k.endswith('age') else 'number' }}" data-optional value="{{ r.get(k, '') if r.get(k) is not none else '' }}"></div>
+      {% endfor %}
+    </div>
+    <div class="ks-row mt-2">{% for k in ['land', 'not_itp', 'not_govt', 'not_epf', 'bank', 'rural', 'portal_check'] %}
+      <label class="ks-chip"><input type="checkbox" name="rules.{{ k }}" {% if r.get(k) %}checked{% endif %}>{{ t('scheme.rule.' ~ k) }}</label>{% endfor %}</div>
+  </fieldset>
+  <div class="ks-field"><label class="ks-label" for="sc-{{ fid }}-note">{{ t('admin.scheme.change_note') }}</label>
+    <input class="ks-input" id="sc-{{ fid }}-note" name="change_note" data-optional maxlength="300" placeholder="{{ t('admin.scheme.change_note_ph') }}"></div>
+  {% if s %}<label class="ks-chip w-fit"><input type="checkbox" name="notify_users" checked>{{ t('admin.scheme.notify_users') }}</label>{% endif %}
+  <button class="ks-btn ks-btn-gold w-fit" type="submit"><i data-lucide="save"></i>{{ t('admin.scheme.save') if s else t('admin.scheme.add') }}</button>
+</form>
+{% endmacro %}
+
+<section class="ks-panel ornate mb-4">{{ m.corners() }}
+  <div class="ks-between"><div><h2 class="ks-title ks-h3 m-0">{{ t('admin.scheme.title') }}</h2>
+    <p class="ks-small ks-muted m-0">{{ t('admin.scheme.help') }}</p></div>
+    <button class="ks-btn ks-btn-ghost ks-btn-sm" data-action="admin.run_job" data-payload='{"job": "schemes"}'><i data-lucide="radar"></i>{{ t('admin.scheme.check_all') }}</button></div>
+  <details class="mt-3"><summary class="ks-btn ks-btn-sm w-fit cursor-pointer"><i data-lucide="plus"></i>{{ t('admin.scheme.add') }}</summary>{{ scheme_form() }}</details>
+</section>
+
+<div class="ks-stack">
+{% for s in schemes %}
+{% set overdue = s.status == 'active' and s.review_due_on and s.review_due_on <= today %}
+<article class="ks-card" id="s-{{ s.slug }}">
+  <div class="ks-between flex-wrap gap-2">
+    <div><strong>{{ s.name }}</strong> <code class="ks-small">{{ s.slug }}</code> <span class="ks-small ks-muted">v{{ s.version }}</span>
+      <div class="ks-small ks-muted">{{ rules_txt[s.id] }} · {% for a in (s.audience or []) %}{{ t('role.' ~ a) }}{{ ', ' if not loop.last }}{% endfor %} · {{ (s.states or [])|join(', ') if s.states else t('common.all_india') }}</div></div>
+    <div class="ks-row">
+      {% if s.status == 'archived' %}<span class="ks-badge danger"><i data-lucide="archive"></i>{{ t('admin.scheme.withdrawn') }}</span>{% endif %}
+      {% if s.builtin %}<span class="ks-badge">{{ t('admin.scheme.builtin') }}</span>{% endif %}
+      <span class="ks-badge {{ link_cls.get(s.link_status, 'info') }}" title="{{ s.link_note or '' }}"><i data-lucide="{{ link_icon.get(s.link_status, 'circle-help') }}"></i>{{ t('schemes.link_state.' ~ s.link_status) }}{% if s.link_http_status %} · {{ s.link_http_status }}{% endif %}</span>
+      {% set oc = s.official_check or {} %}
+      {% if oc.status %}<span class="ks-badge {{ {'ok': '', 'changed': 'warn', 'may_have_ended': 'danger', 'unreadable': 'info'}.get(oc.status, 'info') }}"><i data-lucide="{{ {'ok': 'file-check', 'changed': 'file-diff', 'may_have_ended': 'file-x', 'unreadable': 'file-question'}.get(oc.status, 'file') }}"></i>{{ t('admin.scheme.official.' ~ oc.status) }}</span>{% endif %}
+      {% if overdue %}<span class="ks-badge warn"><i data-lucide="calendar-clock"></i>{{ t('admin.scheme.review_overdue') }}</span>{% endif %}
+      <span class="ks-badge info" title="{{ t('admin.scheme.visits_help') }}"><i data-lucide="users"></i>{{ visits.get(s.id, 0) }}</span>
+    </div>
+  </div>
+  <div class="ks-small ks-muted mt-1">
+    <a href="{{ s.url }}" rel="noopener noreferrer" target="_blank">{{ s.url }}</a>
+    {% if s.link_final_url %} → <span>{{ s.link_final_url }}</span>{% endif %}
+    {% if s.link_note %} · {{ s.link_note }}{% endif %}
+    · {{ t('admin.scheme.checked') }}: {{ s.link_checked_at|dt if s.link_checked_at else '—' }}
+    · {{ t('admin.scheme.review_due') }}: {{ s.review_due_on|d if s.review_due_on else '—' }}
+    {% if s.archived_reason %}<div>{{ t('admin.scheme.reason') }}: {{ s.archived_reason }}{% if s.replaced_by %} → {{ s.replaced_by }}{% endif %}</div>{% endif %}
+  </div>
+  {% set oc = s.official_check or {} %}
+  {% if oc.status in ('changed', 'may_have_ended') %}
+  <details class="ks-small mt-2" open><summary class="cursor-pointer"><strong>{{ t('admin.scheme.official_title') }}</strong>
+    {% if oc.similarity is not none %} · {{ t('admin.scheme.similarity', pct=((oc.similarity or 0) * 100)|round|int) }}{% endif %}
+    {% if oc.changed_at %} · {{ oc.changed_at[:10] }}{% endif %}</summary>
+    {% if oc.hint %}<div class="ks-alert danger mt-1"><i data-lucide="file-x"></i><div>{{ t('admin.scheme.ended_hint', hint=oc.hint) }}</div></div>{% endif %}
+    {% if not oc.name_found %}<div class="ks-muted">{{ t('admin.scheme.name_missing') }}</div>{% endif %}
+    {% if oc.ai %}<div class="ks-alert info mt-1"><i data-lucide="sparkles"></i><div><strong>{{ t('admin.scheme.ai_reading') }}</strong>
+      {% if oc.ai.summary %}<div>{{ oc.ai.summary }}</div>{% endif %}
+      <ul>{% for pnt in oc.ai.points or [] %}<li>{{ pnt.change }} — <q>{{ pnt.quote }}</q></li>{% endfor %}</ul>
+      {% if oc.ai.dropped %}<div class="ks-muted">{{ t('admin.scheme.ai_dropped', n=oc.ai.dropped) }}</div>{% endif %}</div></div>{% endif %}
+    {% if oc.added %}<div class="mt-1"><strong>{{ t('admin.scheme.added') }}</strong><ul>{% for x in oc.added %}<li class="text-green-700 dark:text-green-400">+ {{ x }}</li>{% endfor %}</ul></div>{% endif %}
+    {% if oc.removed %}<div class="mt-1"><strong>{{ t('admin.scheme.removed') }}</strong><ul>{% for x in oc.removed %}<li class="text-red-700 dark:text-red-400">− {{ x }}</li>{% endfor %}</ul></div>{% endif %}
+    <p class="ks-muted">{{ t('admin.scheme.accept_hint') }}</p>
+  </details>
+  {% elif oc.status == 'unreadable' %}<div class="ks-small ks-muted mt-1">{{ t('admin.scheme.unreadable_help') }}</div>{% endif %}
+  <div class="ks-row mt-2">
+    {% if s.status == 'active' %}
+      <button class="ks-btn ks-btn-ghost ks-btn-sm" data-action="admin.scheme.reviewed" data-payload='{{ {"scheme_id": s.id|string}|tojson }}'><i data-lucide="badge-check"></i>{{ t('admin.scheme.mark_reviewed') }}</button>
+      <button class="ks-btn ks-btn-ghost ks-btn-sm" data-action="admin.scheme.check" data-payload='{{ {"scheme_id": s.id|string}|tojson }}' data-no-reload><i data-lucide="radar"></i>{{ t('admin.scheme.check') }}</button>
+    {% else %}
+      <button class="ks-btn ks-btn-sm" data-action="admin.scheme.restore" data-payload='{{ {"scheme_id": s.id|string}|tojson }}'><i data-lucide="archive-restore"></i>{{ t('admin.scheme.restore') }}</button>
+    {% endif %}
+  </div>
+  {% if s.status == 'active' %}
+  <details class="mt-2"><summary class="ks-small cursor-pointer"><i data-lucide="pencil" class="inline w-4 h-4"></i> {{ t('admin.scheme.edit') }}</summary>{{ scheme_form(s) }}</details>
+  <details class="mt-1"><summary class="ks-small cursor-pointer text-red-600"><i data-lucide="archive" class="inline w-4 h-4"></i> {{ t('admin.scheme.withdraw') }}</summary>
+    <form class="ks-row items-end mt-2" data-action-form="admin.scheme.archive" data-payload='{{ {"scheme_id": s.id|string}|tojson }}'>
+      <div class="ks-field m-0 grow"><label class="ks-label" for="ar-{{ s.slug }}">{{ t('admin.scheme.reason') }}</label>
+        <input class="ks-input" id="ar-{{ s.slug }}" name="reason" required minlength="3" maxlength="300" placeholder="{{ t('admin.scheme.reason_ph') }}"></div>
+      <div class="ks-field m-0"><label class="ks-label" for="rp-{{ s.slug }}">{{ t('admin.scheme.replaced_by') }}</label>
+        <select class="ks-select" id="rp-{{ s.slug }}" name="replaced_by" data-optional><option value="">—</option>{% for o in schemes if o.status == 'active' and o.id != s.id %}<option value="{{ o.slug }}">{{ o.name }}</option>{% endfor %}</select></div>
+      <label class="ks-chip"><input type="checkbox" name="notify_users" checked>{{ t('admin.scheme.notify_users') }}</label>
+      <button class="ks-btn ks-btn-danger ks-btn-sm" type="submit">{{ t('admin.scheme.withdraw') }}</button>
+    </form></details>
+  {% endif %}
+</article>
+{% endfor %}
+</div>

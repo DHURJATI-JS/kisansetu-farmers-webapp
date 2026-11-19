@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% import "partials/_macros.html" as m with context %}
+{% block title %}{{ t('schemes.title') }}{% endblock %}
+{% macro card(s) %}
+<article class="ks-card" id="scheme-{{ s.id }}">
+  <div class="ks-between"><strong {% if s.translate %}data-translate{% endif %}>{{ s.name }}</strong>
+    <span class="ks-row">{% for b in s.badges %}<span class="ks-badge {{ 'gold' if b == 'new' else 'info' }}"><i data-lucide="{{ 'sparkles' if b == 'new' else 'refresh-cw' }}"></i>{{ t('schemes.badge.' ~ b) }}</span>{% endfor %}
+    <a class="ks-btn ks-btn-ghost ks-btn-sm" href="/schemes/go/{{ s.id }}">{{ t('schemes.official_site') }}</a></span></div>
+  <p class="ks-small ks-muted m-0" {% if s.translate %}data-translate{% endif %}>{{ s.desc }}</p>
+  <p class="ks-small m-0 mt-1"><i data-lucide="user-check" class="inline w-4 h-4"></i> <span class="ks-muted">{{ t('schemes.who') }}:</span> {{ s.rules }}{% if s.states %} · {{ s.states|join(', ') }}{% endif %}</p>
+  {% if s.official in ('changed', 'may_have_ended') %}<div class="ks-alert warn ks-small mt-2 mb-0" role="status"><i data-lucide="file-warning"></i><div>{{ t('schemes.official.' ~ s.official, date=s.official_since) }}</div></div>{% endif %}
+</article>
+{% endmacro %}
+{% block content %}
+<div class="ks-between"><h1 class="ks-title ks-h1 m-0">{{ t('schemes.title') }}</h1>
+  <button type="button" class="ks-btn ks-btn-ghost ks-btn-sm" data-speak="#sch-voice"><i data-lucide="volume-2"></i>{{ t('common.listen') }}</button></div>
+<p class="ks-muted" id="sch-voice">{{ t('schemes.lead') }}</p>
+<div class="ks-grid cols-2">
+<form id="scheme-form" class="ks-panel ornate">{{ m.corners() }}
+  <h2 class="ks-title ks-h3">{{ t('schemes.check') }}</h2>
+  <div class="ks-grid cols-2">
+    {{ m.select('role', t('schemes.i_am'), [('farmer', t('role.farmer')), ('owner', t('role.owner'))], user.role if user and user.role in ('farmer','owner') else 'farmer') }}
+    {{ m.field('age', t('field.age'), type='number', dtype='int', value=age, attrs='min="0" max="120"', optional=True) }}
+    {{ m.field('landholding_hectares', t('field.landholding_hectares'), type='number', dtype='number', value=(user.landholding_hectares if user else ''), attrs='min="0" step="0.01"', optional=True, help=t('help.landholding')) }}
+    {{ m.field('monthly_income', t('field.monthly_income'), type='number', dtype='number', attrs='min="0" step="1"', optional=True) }}
+    {% set state_opts = [('', t('schemes.state_any'))] %}{% for st in states %}{% set _ = state_opts.append((st, st)) %}{% endfor %}
+    {{ m.select('state', t('field.state'), state_opts, user_state or '', optional=True) }}
+  </div>
+  {% for k in ['has_bank_account', 'is_rural', 'is_income_tax_payer', 'is_govt_employee', 'has_epf_esic_nps'] %}
+  <fieldset class="ks-field"><legend class="ks-label">{{ t('field.' ~ k) }}</legend>
+    <div class="ks-row"><label class="ks-chip"><input type="radio" name="{{ k }}" value="true" data-type="bool" {% if user and user[k] is sameas true %}checked{% endif %}>{{ t('common.yes') }}</label>
+      <label class="ks-chip"><input type="radio" name="{{ k }}" value="false" data-type="bool" {% if user and user[k] is sameas false %}checked{% endif %}>{{ t('common.no') }}</label></div></fieldset>
+  {% endfor %}
+  <button class="ks-btn ks-btn-gold ks-btn-xl" type="submit"><i data-lucide="search-check"></i>{{ t('schemes.check_btn') }}</button>
+  <p class="ks-small ks-muted mt-2">{{ t('schemes.privacy') }}</p>
+</form>
+<section>
+  <div id="scheme-results" class="ks-stack" aria-live="polite">
+    {% for s in schemes %}{{ card(s) }}{% else %}{{ m.empty(t('schemes.none'), 'landmark') }}{% endfor %}
+  </div>
+  {% if withdrawn %}
+  <details class="ks-panel mt-4"><summary class="ks-title ks-h3 cursor-pointer"><i data-lucide="archive" class="inline"></i> {{ t('schemes.withdrawn', n=withdrawn|length) }}</summary>
+    <ul class="ks-list ks-small mt-2">{% for s in withdrawn %}<li><strong {% if s.translate %}data-translate{% endif %}>{{ s.name }}</strong> · {{ s.archived_at[:10] }}
+      {% if s.archived_reason %}<div class="ks-muted" data-translate>{{ s.archived_reason }}</div>{% endif %}
+      {% if s.replaced_by %}<a href="/schemes/go/{{ s.replaced_by }}">{{ t('schemes.see_replacement') }}</a>{% endif %}</li>{% endfor %}</ul>
+  </details>
+  {% endif %}
+</section>
+</div>
+<p class="ks-small ks-muted mt-4">{{ t('schemes.disclaimer') }}</p>
+{% endblock %}
+{% block scripts %}<script nonce="{{ csp_nonce }}" src="{{ asset('js/pages/schemes.js') }}"></script>{% endblock %}

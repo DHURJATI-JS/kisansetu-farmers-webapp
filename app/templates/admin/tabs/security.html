@@ -1,0 +1,49 @@
+<div class="ks-grid cols-2">
+<section class="ks-panel ornate">{{ m.corners() }}
+  <h2 class="ks-title ks-h3">{{ t('admin.ip_bans') }}</h2>
+  <form class="ks-row items-end mb-3" data-action-form="admin.ip" data-payload='{"op": "ban"}'>
+    <div class="ks-field m-0"><label class="ks-label" for="ipb-ip">IP</label><input id="ipb-ip" class="ks-input" name="ip" required maxlength="64"></div>
+    <div class="ks-field m-0"><label class="ks-label" for="ipb-min">{{ t('admin.minutes') }}</label><input id="ipb-min" class="ks-input w-28" name="minutes" type="number" data-type="int" min="1" value="1440"></div>
+    <div class="ks-field m-0"><label class="ks-label" for="ipb-reason">{{ t('field.note') }}</label><input id="ipb-reason" class="ks-input" name="reason" maxlength="300"></div>
+    <button class="ks-btn ks-btn-danger" type="submit">{{ t('admin.ban') }}</button>
+  </form>
+  <ul class="ks-list ks-small">{% for b in bans %}{% set active = not b.lifted_at and (not b.expires_at or b.expires_at > now) %}
+    <li class="ks-between items-start gap-2"><span><code>{{ b.ip }}</code>
+      <span class="ks-badge {{ 'danger' if active else '' }}">{{ t('admin.ban_source.' ~ b.source) }}</span>
+      {% if b.level %}<span class="ks-badge warn">{{ t('admin.ban_level', n=b.level + 1) }}</span>{% endif %}
+      {% if b.shared %}<span class="ks-badge info">{{ t('admin.ban_shared') }}</span>{% endif %}
+      <div>{{ b.reason|truncate(140) }}</div>
+      {% if b.evidence %}<details class="ks-small"><summary>{{ t('admin.evidence', n=(b.evidence.offences or [])|length, points=b.evidence.points) }}</summary>
+        {% if b.evidence.ai_note %}<div><strong>{{ t('admin.ai_note') }}</strong> {{ b.evidence.ai_note }}</div>{% endif %}
+        <ul>{% for o in b.evidence.offences or [] %}<li>{{ o.at }} · {{ o.kind }}{% if o.signals %} · {{ o.signals }}{% endif %}{% if o.text %} · “{{ o.text }}”{% endif %}</li>{% endfor %}</ul></details>{% endif %}
+      <div class="ks-muted">{{ b.created_at|dt }} → {{ b.expires_at|dt if b.expires_at else '∞' }}{% if b.lifted_at %} · {{ t('admin.lifted') }} {{ b.lifted_at|dt }}{% if b.lift_note %} ({{ b.lift_note }}){% endif %}{% endif %}</div></span>
+    {% if active %}<button class="ks-btn ks-btn-ghost ks-btn-sm" data-action="admin.ip" data-payload='{{ {"op": "lift", "ban_id": b.id|string}|tojson }}' data-prompt="js.prompt_note" data-prompt-field="reason" data-prompt-optional>{{ t('admin.lift') }}</button>{% endif %}</li>{% else %}<li>{{ t('admin.none') }}</li>{% endfor %}</ul>
+</section>
+<section class="ks-panel">
+  <h2 class="ks-title ks-h3">{{ t('admin.posting_bans') }}</h2>
+  <p class="ks-small ks-muted">{{ t('admin.posting_bans_help') }}</p>
+  <ul class="ks-list ks-small">{% for s, name, phone in sanctions %}{% set active = not s.lifted_at and s.expires_at and s.expires_at > now %}
+    <li class="ks-between items-start gap-2"><span><strong>{{ name }}</strong> <code>{{ phone }}</code>
+      <span class="ks-badge {{ 'danger' if active else '' }}">{{ t('admin.ban_source.' ~ s.source) }}</span>
+      {% if s.level %}<span class="ks-badge warn">{{ t('admin.ban_level', n=s.level + 1) }}</span>{% endif %}
+      <div>{{ s.reason|truncate(140) }}</div>
+      {% if s.evidence %}<details class="ks-small"><summary>{{ t('admin.evidence', n=(s.evidence.offences or [])|length, points=s.evidence.points) }}</summary>
+        {% if s.evidence.ai_note %}<div><strong>{{ t('admin.ai_note') }}</strong> {{ s.evidence.ai_note }}</div>{% endif %}
+        <ul>{% for o in s.evidence.offences or [] %}<li>{{ o.at }} · {{ o.kind }}{% if o.signals %} · {{ o.signals }}{% endif %}{% if o.text %} · “{{ o.text }}”{% endif %}</li>{% endfor %}</ul></details>{% endif %}
+      <div class="ks-muted">{{ s.created_at|dt }} → {{ s.expires_at|dt }}{% if s.lifted_at %} · {{ t('admin.lifted') }} {{ s.lifted_at|dt }}{% endif %}</div></span>
+    {% if active %}<button class="ks-btn ks-btn-ghost ks-btn-sm" data-action="admin.sanction.lift" data-payload='{{ {"sanction_id": s.id|string}|tojson }}' data-prompt="js.prompt_note" data-prompt-field="note" data-prompt-optional>{{ t('admin.lift') }}</button>{% endif %}</li>{% else %}<li>{{ t('admin.none') }}</li>{% endfor %}</ul>
+  <h2 class="ks-title ks-h3 mt-4">{{ t('admin.banned_accounts') }}</h2>
+  <ul class="ks-list ks-small">{% for u in banned_users %}
+    <li class="ks-between items-start gap-2"><span><strong>{{ u.full_name }}</strong> <code>{{ u.phone }}</code> · {{ t('role.' ~ u.role) }}
+      <div>{{ (u.ban_reason or '')|truncate(140) }}</div><div class="ks-muted">{{ u.banned_at|dt if u.banned_at else '' }}</div></span>
+    <button class="ks-btn ks-btn-sm" data-action="admin.user.unban" data-payload='{{ {"user_id": u.id|string}|tojson }}' data-prompt="js.prompt_note">{{ t('admin.unban') }}</button></li>{% else %}<li>{{ t('admin.none') }}</li>{% endfor %}</ul>
+</section>
+<section class="ks-panel">
+  <h2 class="ks-title ks-h3">{{ t('admin.abuse_events') }}</h2>
+  <ul class="ks-list ks-small">{% for e in events %}<li><span class="ks-badge {{ 'danger' if e.severity in ('high','medium') else 'info' }}">{{ e.kind }}</span> <code>{{ e.ip or '' }}</code> · {{ e.created_at|dt }}<div class="ks-muted">{{ (e.details or {})|tojson|truncate(160) }}</div></li>{% else %}<li>{{ t('admin.none') }}</li>{% endfor %}</ul>
+</section>
+<section class="ks-panel">
+  <h2 class="ks-title ks-h3">{{ t('admin.calamities') }}</h2>
+  <ul class="ks-list ks-small">{% for c in calamities %}<li>{{ t('calamity.' ~ c.kind) }} · {{ c.title }} · {{ c.source }} · {{ c.created_at|dt }}</li>{% else %}<li>{{ t('admin.none') }}</li>{% endfor %}</ul>
+</section>
+</div>

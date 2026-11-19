@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% import "partials/_macros.html" as m with context %}
+{% set ai_auto_open = True %}
+{% block title %}{{ t('forgot.title') }}{% endblock %}
+{% block content %}
+<section class="ks-panel ornate max-w-lg mx-auto mt-6">{{ m.corners() }}
+  <h1 class="ks-title ks-h2">{{ t('forgot.title') }}</h1>
+  <p class="ks-muted">{{ t('forgot.lead') }}</p>
+  <form id="forgot-form" novalidate>
+    {{ m.field('phone', t('field.phone'), type='tel', required=True, attrs='inputmode="tel" autocomplete="tel" maxlength="16"') }}
+    <button type="button" class="ks-btn" id="forgot-send"><i data-lucide="message-square"></i>{{ t('forgot.send') }}</button>
+    <div id="forgot-test" class="ks-alert warn mt-3 ks-hidden" role="status"></div>
+    <div id="forgot-step2" class="ks-hidden mt-4">
+      {{ m.field('otp', t('field.otp'), attrs='inputmode="numeric" autocomplete="one-time-code" maxlength="6" pattern="[0-9]{6}"') }}
+      {{ m.field('new_password', t('field.new_password'), type='password', attrs='autocomplete="new-password" maxlength="128"', help=t('help.password_rules')) }}
+      <button class="ks-btn ks-btn-xl w-full" type="submit"><i data-lucide="key-round"></i>{{ t('forgot.reset') }}</button>
+    </div>
+  </form>
+</section>
+{% endblock %}
+{% block scripts %}<script nonce="{{ csp_nonce }}" src="{{ asset('js/pages/auth.js') }}"></script>{% endblock %}

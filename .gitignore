@@ -1,0 +1,33 @@
+# secrets — every .env variant except the template
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+.claude/settings.local.json
+
+# runtime data (uploads, exports, logs, dev secrets, models) and builds
+var/
+app/static/dist/
+app/static/vendor/
+*.log
+
+# python
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# load testing
+tests/load/.seed.json
+tests/load/results/
+
+# editors / OS
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db

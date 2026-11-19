@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% import "partials/_macros.html" as m with context %}
+{% block title %}{{ job.title }}{% endblock %}
+{% block content %}
+<section class="ks-panel ornate">{{ m.corners() }}
+  <div class="ks-between"><h1 class="ks-title ks-h1 m-0" data-translate>{{ job.title }}</h1>{{ m.status_badge(t, job.status) }}</div>
+  <p class="ks-muted"><a href="/f/{{ farm.id }}">{{ farm.name }}</a> · {{ branch.name }} · {{ [branch.city, branch.district, branch.state]|select|join(', ') }}</p>
+  <div class="ks-grid cols-4 my-4">
+    {{ m.stat(t('field.salary'), job.salary_amount|inr ~ ' / ' ~ t('salary.' ~ job.salary_type), 'wallet') }}
+    {{ m.stat(t('field.work_hours'), branch.work_start.strftime('%H:%M') ~ '–' ~ branch.work_end.strftime('%H:%M'), 'clock') }}
+    {{ m.stat(t('field.positions'), job.positions, 'users') }}
+    {{ m.stat(t('field.role'), t('role.' ~ job.role), 'id-card') }}
+  </div>
+  {% if job.description %}<p data-translate class="whitespace-pre-wrap">{{ job.description }}</p>{% endif %}
+  <div class="ks-row">{% for c in crops %}<span class="ks-chip"><i data-lucide="sprout"></i><span data-translate>{{ c }}</span></span>{% endfor %}</div>
+  <h2 class="ks-title ks-h3 mt-4">{{ t('jobs.your_rights') }}</h2>
+  <ul class="ks-list" id="rights">
+    {% for i in range(1, 7) %}<li>{{ t('jobs.right.' ~ i, pct=cfg.holiday_premium_pct, hours=cfg.max_work_hours, days=cfg.notice_days) }}</li>{% endfor %}
+  </ul>
+  <button type="button" class="ks-btn ks-btn-ghost ks-btn-sm" data-speak="#rights"><i data-lucide="volume-2"></i>{{ t('common.listen') }}</button>
+  <h2 class="ks-title ks-h3 mt-4">{{ t('public.policies') }}</h2>
+  <ul class="ks-list">{% for p in policies %}<li>{{ t('insurance.' ~ p.policy_type) }} · {{ p.insurer }} · {{ p.valid_to|d }}{% if p.upload_id %} · <a href="/media/{{ p.upload_id }}" target="_blank" rel="noopener">{{ t('farm.view_document') }}</a>{% endif %}</li>{% endfor %}</ul>
+</section>
+
+<section class="ks-panel ornate mt-4" id="terms">{{ m.corners() }}
+  <h2 class="ks-title ks-h3">{{ t('public.terms', version=farm.terms_version) }}</h2>
+  {% if farm.terms_mode == 'custom' and farm.terms_text %}<div class="whitespace-pre-wrap" data-translate id="terms-text">{{ farm.terms_text }}</div>
+  {% else %}<ol>{% for k in boiler_keys %}<li>{{ t(k, pct=cfg.holiday_premium_pct, hours=cfg.max_work_hours, days=cfg.notice_days) }}</li>{% endfor %}</ol>{% endif %}
+  <div class="ks-row">
+    <button type="button" class="ks-btn ks-btn-gold ks-btn-sm" data-terms-explain data-farm="{{ farm.id }}" data-target="#terms-x" data-source="{{ '#terms-text' if farm.terms_mode == 'custom' and farm.terms_text else '#terms' }}"><i data-lucide="sparkles"></i>{{ t('terms.explain_btn') }}</button>
+    <button type="button" class="ks-btn ks-btn-ghost ks-btn-sm" data-speak="#terms"><i data-lucide="volume-2"></i>{{ t('common.listen') }}</button>
+  </div>
+  <div id="terms-x" class="mt-3" aria-live="polite"></div>
+
+  {% if halted or job.status != 'open' %}
+  <div class="ks-alert warn mt-4"><i data-lucide="octagon-pause"></i><div>{{ t('jobs.not_accepting') }}</div></div>
+  {% elif user and farm.owner_id == user.id %}
+  <div class="ks-alert info mt-4"><i data-lucide="house"></i><div>{{ t('jobs.own_farm') }}</div></div>
+  {% elif user and user.role in ('farmer', 'owner') and working_at and working_at.status == 'active' %}
+  <div class="ks-alert info mt-4"><i data-lucide="briefcase"></i><div>{{ t('jobs.has_job', farm=working_at.farm) }}</div></div>
+  {% elif user and user.role in ('farmer', 'owner') %}
+  {% if working_at %}<div class="ks-alert info mt-4"><i data-lucide="briefcase"></i><div>{{ t('jobs.notice_note', farm=working_at.farm) }}</div></div>{% endif %}
+  <label class="ks-check mt-4"><input type="checkbox" id="apply-terms"><span>{{ t('jobs.accept_terms') }}</span></label>
+  <div class="ks-field mt-2"><label class="ks-label" for="apply-note">{{ t('jobs.note') }}</label><input id="apply-note" class="ks-input" maxlength="300"></div>
+  <button class="ks-btn ks-btn-go ks-btn-xl mt-2" id="apply-btn" data-job="{{ job.id }}"><i data-lucide="hand"></i>{{ t('jobs.apply') }}</button>
+  <p class="ks-small ks-muted">{{ t('jobs.apply_help', km=cfg.max_join_radius_km) }}</p>
+  {% elif not user %}
+  <a class="ks-btn ks-btn-xl mt-4" href="/signup"><i data-lucide="user-plus"></i>{{ t('jobs.signup_to_apply') }}</a>
+  {% endif %}
+</section>
+{% endblock %}
+{% block scripts %}<script nonce="{{ csp_nonce }}" src="{{ asset('js/pages/jobs.js') }}"></script>{% endblock %}

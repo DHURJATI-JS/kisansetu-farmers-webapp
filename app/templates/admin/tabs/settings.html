@@ -1,0 +1,41 @@
+<section class="ks-panel ornate mb-4">{{ m.corners() }}
+  <h2 class="ks-title ks-h3">{{ t('admin.platform_settings') }}</h2>
+  <p class="ks-small ks-muted">{{ t('admin.settings_help') }}</p>
+  <div class="ks-table-wrap"><table class="ks-table"><tbody>
+  {% for key in ['billing_day', 'salary_warning_days', 'salary_grace_days', 'notice_days', 'max_work_hours', 'holiday_premium_pct', 'max_join_radius_km', 'calamity_radius_km', 'bad_report_threshold', 'bad_report_window_days', 'false_report_ban_threshold', 'national_floor_wage', 'min_worker_age', 'data_retention_days', 'compensation_default_days', 'insurance_expiry_warning_days', 'approval_sla_hours', 'scheme_review_days'] %}
+    <tr><td><strong>{{ t('setting.' ~ key) }}</strong><div class="ks-small ks-muted">{{ t('setting.' ~ key ~ '.help') }}</div></td>
+      <td><form class="flex gap-2" data-setting-form data-key="{{ key }}"><input class="ks-input w-36" name="value" value="{{ cfg[key] }}" aria-label="{{ t('setting.' ~ key) }}"><button class="ks-btn ks-btn-sm" type="submit">{{ t('common.save') }}</button></form></td></tr>
+  {% endfor %}
+  </tbody></table></div>
+</section>
+<div class="ks-grid cols-2">
+<section class="ks-panel ornate">{{ m.corners() }}
+  <h2 class="ks-title ks-h3">{{ t('setting.tax') }}</h2>
+  <p class="ks-small ks-muted">{{ cfg.tax.label }}</p>
+  <form data-setting-form data-key="tax" data-json><textarea class="ks-textarea font-mono text-xs" rows="12" name="value" aria-label="{{ t('setting.tax') }}">{{ cfg.tax|tojson(indent=1) }}</textarea>
+    <button class="ks-btn ks-btn-sm mt-2" type="submit">{{ t('common.save') }}</button></form>
+  <h2 class="ks-title ks-h3 mt-6">{{ t('setting.authentic_job_sites') }}</h2>
+  <form data-setting-form data-key="authentic_job_sites" data-list><textarea class="ks-textarea" rows="5" name="value" aria-label="{{ t('setting.authentic_job_sites') }}">{{ cfg.authentic_job_sites|join('\n') }}</textarea>
+    <button class="ks-btn ks-btn-sm mt-2" type="submit">{{ t('common.save') }}</button></form>
+  <h2 class="ks-title ks-h3 mt-6">{{ t('setting.scheme_domains') }}</h2>
+  <form data-setting-form data-key="scheme_domains" data-list><textarea class="ks-textarea" rows="4" name="value" aria-label="{{ t('setting.scheme_domains') }}">{{ cfg.scheme_domains|join('\n') }}</textarea>
+    <button class="ks-btn ks-btn-sm mt-2" type="submit">{{ t('common.save') }}</button></form>
+</section>
+<section class="ks-panel ornate">{{ m.corners() }}
+  <h2 class="ks-title ks-h3">{{ t('admin.min_wages') }}</h2>
+  <p class="ks-small ks-muted">{{ t('admin.min_wages_help', floor=cfg.national_floor_wage) }}</p>
+  <div class="ks-table-wrap max-h-96 overflow-y-auto"><table class="ks-table"><tbody>{% for s in states %}{% set w = wages.get(s) %}
+    <tr><td>{{ s }}</td><td><form class="flex gap-2" data-action-form="admin.minwage.set" data-payload='{{ {"state": s}|tojson }}'>
+      <input class="ks-input w-28" name="daily_wage" type="number" data-type="number" data-optional min="100" step="1" value="{{ w.daily_wage if w and w.daily_wage else '' }}" aria-label="{{ s }}">
+      <input class="ks-input w-36" name="effective_from" type="date" data-optional value="{{ w.effective_from.isoformat() if w and w.effective_from else '' }}" aria-label="{{ t('admin.effective_from') }}">
+      <button class="ks-btn ks-btn-sm" type="submit">{{ t('common.save') }}</button></form></td></tr>{% endfor %}</tbody></table></div>
+  <h2 class="ks-title ks-h3 mt-6">{{ t('admin.holidays') }}</h2>
+  <form class="ks-row items-end" data-action-form="admin.holiday" data-payload='{"op": "add"}'>
+    <input class="ks-input w-40" type="date" name="day" required aria-label="{{ t('field.date') }}">
+    <input class="ks-input w-48" name="name" required maxlength="120" placeholder="{{ t('admin.holiday_name') }}" aria-label="{{ t('admin.holiday_name') }}">
+    <select class="ks-select w-48" name="state" data-optional aria-label="{{ t('admin.state') }}"><option value="">{{ t('common.all_india') }}</option>{% for s in states %}<option value="{{ s }}">{{ s }}</option>{% endfor %}</select>
+    <button class="ks-btn ks-btn-sm" type="submit">{{ t('common.add') }}</button></form>
+  <ul class="ks-list ks-small mt-2">{% for h in holidays %}<li class="ks-between"><span>{{ h.day|d }} · {{ h.name }} · {{ h.state or t('common.all_india') }}</span>
+    <button class="ks-icon-btn" data-action="admin.holiday" data-payload='{{ {"op": "remove", "holiday_id": h.id|string}|tojson }}' aria-label="{{ t('common.remove') }}"><i data-lucide="x"></i></button></li>{% endfor %}</ul>
+</section>
+</div>

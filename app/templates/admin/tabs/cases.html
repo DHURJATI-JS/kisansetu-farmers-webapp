@@ -1,0 +1,12 @@
+{% for c, fname, bname in cases %}
+<section class="ks-panel ornate mb-3" id="c-{{ c.id }}">{{ m.corners() }}
+  <div class="ks-between"><h2 class="ks-title ks-h3 m-0">{{ fname }} · {{ bname or t('admin.whole_farm') }}</h2><span class="ks-badge {{ '' if c.status == 'resolved' else 'danger' }}">{{ t('case.status.' ~ c.status) }}</span></div>
+  <p class="ks-small ks-muted">{{ c.created_at|dt }} · {{ t('admin.case_reports', n=c.grievance_ids|length) }}</p>
+  {% if c.legal_warning_text %}<details><summary>{{ t('admin.legal_warning_sent') }}</summary><p class="whitespace-pre-wrap ks-small">{{ c.legal_warning_text }}</p></details>{% endif %}
+  {% if c.compensation_per_worker %}<p>{{ t('admin.compensation_set', amount=c.compensation_per_worker|inr) }}</p>{% endif %}
+  {% if c.status != 'resolved' %}<div class="ks-row mt-2">
+    <button class="ks-btn ks-btn-danger ks-btn-sm" data-action="admin.case.legal_warning" data-payload='{{ {"case_id": c.id|string}|tojson }}' data-prompt="js.prompt_legal" data-prompt-field="text" data-prompt-multiline>{{ t('admin.legal_warning') }}</button>
+    <button class="ks-btn ks-btn-gold ks-btn-sm" data-action="admin.case.compensation" data-payload='{{ {"case_id": c.id|string}|tojson }}' data-prompt="js.prompt_compensation" data-prompt-field="per_worker" data-prompt-type="number">{{ t('admin.compensation') }}</button>
+    <button class="ks-btn ks-btn-sm" data-action="admin.case.resolve" data-payload='{{ {"case_id": c.id|string}|tojson }}' data-prompt="js.prompt_note">{{ t('admin.resolve_lift') }}</button></div>{% endif %}
+</section>
+{% else %}{{ m.empty(t('admin.none'), 'scale') }}{% endfor %}

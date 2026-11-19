@@ -1,0 +1,10 @@
+-r requirements.txt
+pytest>=8.2
+pytest-asyncio>=0.23
+# Builds Tailwind CSS without Node (downloads the official standalone CLI once)
+pytailwindcss>=0.2
+# Load testing (scripts/run_loadtest.py) and end-to-end tests
+locust>=2.37
+psutil>=5.9
+websocket-client>=1.8   # Socket.IO client used by tests/e2e_sessions.py
+playwright>=1.45       # UI checks / screenshots (then: python -m playwright install chromium)

@@ -1,0 +1,52 @@
+<footer class="ks-footer" role="contentinfo">
+  <div class="ks-footer-inner">
+    <div>
+      <a class="ks-logo mb-3" href="/"><img src="/static/img/icon.svg" alt="" width="38" height="38"><span>{{ APP_NAME }}</span></a>
+      <p class="ks-muted">{{ t('footer.about') }}</p>
+      <p class="ks-small ks-muted">{{ t('footer.india_only') }}</p>
+      <div class="ks-row mt-3">
+        <span class="ks-badge gold"><i data-lucide="shield-check"></i>{{ t('footer.badge_secure') }}</span>
+        <span class="ks-badge"><i data-lucide="languages"></i>{{ t('footer.badge_languages', n=LANGUAGES|length) }}</span>
+      </div>
+    </div>
+    <div>
+      <h4>{{ t('footer.explore') }}</h4>
+      <ul>
+        <li><a href="/jobs">{{ t('nav.jobs') }}</a></li>
+        <li><a href="/shop">{{ t('nav.shop') }}</a></li>
+        <li><a href="/schemes">{{ t('nav.schemes') }}</a></li>
+        <li><a href="/community">{{ t('nav.community') }}</a></li>
+        <li><a href="/policies">{{ t('nav.policies') }}</a></li>
+        <li><a href="/stress-test">{{ t('stress.title') }}</a></li>
+      </ul>
+    </div>
+    <div>
+      <h4>{{ t('footer.legal') }}</h4>
+      <ul>
+        <li><a href="/legal/terms">{{ t('legal.terms.title') }}</a></li>
+        <li><a href="/legal/privacy">{{ t('legal.privacy.title') }}</a></li>
+        <li><a href="/legal/disclaimer">{{ t('legal.disclaimer.title') }}</a></li>
+        <li><a href="/legal/accessibility">{{ t('legal.accessibility.title') }}</a></li>
+        <li><a href="/.well-known/security.txt">{{ t('footer.security') }}</a></li>
+      </ul>
+    </div>
+    <div>
+      <h4>{{ t('footer.help') }}</h4>
+      <ul>
+        <li><i data-lucide="phone"></i> {{ t('footer.kcc') }}: <a href="tel:{{ HELPLINES.kisan_call_centre }}">{{ HELPLINES.kisan_call_centre }}</a></li>
+        <li><i data-lucide="siren"></i> {{ t('footer.emergency') }}: <a href="tel:{{ HELPLINES.emergency }}">{{ HELPLINES.emergency }}</a></li>
+        <li><i data-lucide="heart-handshake"></i> {{ t('footer.women') }}: <a href="tel:{{ HELPLINES.women }}">{{ HELPLINES.women }}</a></li>
+        <li><i data-lucide="baby"></i> {{ t('footer.child') }}: <a href="tel:{{ HELPLINES.child }}">{{ HELPLINES.child }}</a></li>
+        {% if user %}<li><a href="/report">{{ t('nav.report') }}</a></li>{% endif %}
+      </ul>
+    </div>
+  </div>
+  <div class="ks-disclaimer" role="note">
+    <p><strong>{{ t('footer.disclaimer_title') }}</strong></p>
+    <p>{{ t('footer.disclaimer_1') }}</p>
+    <p>{{ t('footer.disclaimer_2') }}</p>
+    <p>{{ t('footer.disclaimer_3') }}</p>
+    <p>{{ t('footer.disclaimer_4') }}</p>
+    <p class="mb-0">{{ t('footer.copyright', app=APP_NAME) }}</p>
+  </div>
+</footer>

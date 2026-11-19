@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% import "partials/_macros.html" as m with context %}
+{% block title %}{{ t('shop.market') }}{% endblock %}
+{% block content %}
+<div class="ks-between mb-2"><h1 class="ks-title ks-h1 m-0">{% block shop_heading %}{{ t('shop.market') }}{% endblock %}</h1><a class="ks-btn ks-btn-gold" href="/cart"><i data-lucide="shopping-basket"></i>{{ t('nav.cart') }} <span class="ks-badge ks-hidden" data-cart-count></span></a></div>
+{% block shop_intro %}<p class="ks-muted">{{ t('shop.market_lead') }}</p>{% endblock %}
+<form id="shop-search" class="ks-panel ornate mb-4" role="search" data-shop="{% block shop_id %}{% endblock %}">{{ m.corners() }}
+  <div class="ks-grid cols-4">
+    <div class="ks-field m-0 sm:col-span-2"><label class="ks-label" for="ss-q">{{ t('shop.search') }}</label>
+      <div class="flex gap-2"><input id="ss-q" name="q" class="ks-input" maxlength="100" placeholder="{{ t('shop.search_placeholder') }}"><button type="button" class="ks-icon-btn" data-mic="#ss-q" aria-label="{{ t('ai.mic') }}"><i data-lucide="mic"></i></button></div></div>
+    <div class="ks-field m-0"><label class="ks-label" for="ss-cat">{{ t('field.category') }}</label>
+      <select id="ss-cat" name="category" class="ks-select"><option value="">{{ t('shop.all') }}</option>{% for c in categories or [] %}<option value="{{ c }}">{{ t('cat.' ~ c) }}</option>{% endfor %}</select></div>
+    <div class="ks-field m-0"><label class="ks-label" for="ss-city">{{ t('jobs.city') }}</label><input id="ss-city" name="city" class="ks-input" list="ss-cities" maxlength="60"><datalist id="ss-cities">{% for c in cities or [] %}<option value="{{ c }}">{% endfor %}</datalist></div>
+    <div class="ks-field m-0"><label class="ks-label" for="ss-sort">{{ t('jobs.sort') }}</label>
+      <select id="ss-sort" name="sort" class="ks-select"><option value="relevance">{{ t('shop.sort_relevance') }}</option><option value="distance">{{ t('jobs.sort_distance') }}</option><option value="price_asc">{{ t('shop.sort_price_asc') }}</option><option value="price_desc">{{ t('shop.sort_price_desc') }}</option><option value="rating">{{ t('shop.sort_rating') }}</option><option value="newest">{{ t('jobs.sort_newest') }}</option></select></div>
+  </div>
+  <div class="ks-row mt-3"><button class="ks-btn" type="submit"><i data-lucide="search"></i>{{ t('jobs.search_btn') }}</button>
+    <button class="ks-btn ks-btn-ghost" type="button" id="ss-near"><i data-lucide="locate-fixed"></i>{{ t('jobs.near_me') }}</button></div>
+</form>
+<div id="ss-results" class="ks-grid cols-3" aria-live="polite"></div>
+<div class="text-center mt-4"><button class="ks-btn ks-btn-ghost ks-hidden" id="ss-more">{{ t('common.load_more') }}</button></div>
+{% endblock %}
+{% block scripts %}<script nonce="{{ csp_nonce }}" src="{{ asset('js/pages/shop.js') }}"></script>{% endblock %}

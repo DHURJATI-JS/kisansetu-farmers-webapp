@@ -1,0 +1,11 @@
+<nav class="ks-bottomnav" aria-label="{{ t('a11y.bottom_nav') }}">
+  <a href="{{ '/dashboard' if user else '/' }}" class="{{ 'active' if path in ('/', '/dashboard') }}"><i data-lucide="home"></i><span>{{ t('nav.home') }}</span></a>
+  {% if user and user.role == 'owner' %}
+  <a href="/farms/new" class="{{ 'active' if path.startswith('/farms') }}"><i data-lucide="tractor"></i><span>{{ t('nav.farms') }}</span></a>
+  {% else %}
+  <a href="/jobs" class="{{ 'active' if path.startswith('/jobs') }}"><i data-lucide="briefcase"></i><span>{{ t('nav.jobs') }}</span></a>
+  {% endif %}
+  <a href="/shop" class="{{ 'active' if path.startswith('/shop') }}"><i data-lucide="store"></i><span>{{ t('nav.shop') }}</span></a>
+  <a href="{{ '/assistant' if user else '/schemes' }}" class="{{ 'active' if path.startswith('/assistant') or path.startswith('/schemes') }}"><i data-lucide="{{ 'sparkles' if user else 'landmark' }}"></i><span>{{ t('nav.assistant') if user else t('nav.schemes') }}</span></a>
+  <a href="{{ '/account' if user else '/login' }}" class="{{ 'active' if path.startswith('/account') or path == '/login' }}"><i data-lucide="user-round"></i><span>{{ t('nav.me') if user else t('nav.login') }}</span></a>
+</nav>

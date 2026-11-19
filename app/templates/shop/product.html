@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% import "partials/_macros.html" as m with context %}
+{% block title %}{{ p.name }}{% endblock %}
+{% block content %}
+<div class="ks-grid cols-2">
+  <section class="ks-panel ornate">{{ m.corners() }}
+    {% if p.images %}
+    <img class="rounded-xl w-full max-h-96 object-cover" src="/media/{{ p.images[0] }}" alt="{{ p.name }}">
+    <div class="ks-row mt-2">{% for img in p.images[1:] %}<img class="rounded-lg h-20 w-20 object-cover" src="/media/{{ img }}" alt="">{% endfor %}</div>
+    {% else %}{{ m.empty(t('shop.no_photo'), 'image') }}{% endif %}
+  </section>
+  <section class="ks-panel ornate">{{ m.corners() }}
+    <h1 class="ks-title ks-h1" data-translate>{{ p.name }}</h1>
+    <p class="ks-muted"><a href="/shop/s/{{ shop.id }}">{{ shop.name }}</a> · <a href="/f/{{ farm.id }}">{{ farm.name }}</a> · {{ branch.city or '' }}</p>
+    <div class="ks-row"><span class="ks-badge gold text-lg">{{ p.price|inr }} / {{ t('unit.' ~ p.unit) }}</span><span class="ks-badge">{{ t('cat.' ~ p.category) }}</span>
+      {% if avg %}<span class="ks-badge info">★ {{ avg }} ({{ reviews|length }})</span>{% endif %}</div>
+    <p class="mt-3" data-translate>{{ p.description or '' }}</p>
+    <p class="ks-small">{{ t('shop.in_stock', n=p.stock, unit=t('unit.' ~ p.unit)) }} · {{ t('shop.min_order', n=p.min_order_qty) }}</p>
+    {% if halted or p.status != 'active' or shop.status != 'open' %}
+      <div class="ks-alert warn"><i data-lucide="octagon-pause"></i><div>{{ t('shop.unavailable') }}</div></div>
+    {% elif p.stock > 0 %}
+    <div class="flex gap-2 items-end">
+      <div class="ks-field m-0"><label class="ks-label" for="qty">{{ t('shop.qty') }}</label><input id="qty" class="ks-input w-32" type="number" min="{{ p.min_order_qty }}" step="0.5" value="{{ p.min_order_qty }}"></div>
+      <button class="ks-btn ks-btn-gold whitespace-nowrap" data-cart-add data-qty-input="#qty" data-payload='{{ {"id": p.id|string, "name": p.name, "shop_id": shop.id|string, "branch_id": p.branch_id|string}|tojson }}'><i data-lucide="shopping-basket"></i>{{ t('shop.add_to_cart') }}</button>
+    </div>
+    {% else %}<div class="ks-alert warn">{{ t('shop.out_of_stock') }}</div>{% endif %}
+    <p class="ks-small ks-muted mt-3">{{ t('shop.cod_note') }}</p>
+  </section>
+</div>
+
+<section class="ks-panel ornate mt-4" id="qa">{{ m.corners() }}
+  <h2 class="ks-title ks-h2 flex items-center gap-2"><i data-lucide="sparkles"></i>{{ t('shop.ask_ai') }}</h2>
+  <form id="ask-form" class="flex gap-2 items-end" data-product="{{ p.id }}">
+    <div class="ks-field m-0 flex-1"><label class="ks-label" for="ask-q">{{ t('shop.ask_label') }}</label><input id="ask-q" class="ks-input" maxlength="500" minlength="3" required placeholder="{{ t('shop.ask_placeholder') }}"></div>
+    <button type="button" class="ks-icon-btn" data-mic="#ask-q" aria-label="{{ t('ai.mic') }}"><i data-lucide="mic"></i></button>
+    <button class="ks-btn" type="submit"><i data-lucide="send"></i>{{ t('ai.send') }}</button>
+  </form>
+  <div id="ask-out" class="mt-3" aria-live="polite"></div>
+  <h3 class="ks-h3 mt-4">{{ t('shop.qa') }}</h3>
+  <ul class="ks-list">{% for q in qa %}<li><strong data-translate>{{ q.question }}</strong>
+    <div data-translate>{{ q.owner_answer or q.ai_answer }}</div><span class="ks-badge {{ '' if q.status == 'answered' else 'info' }}">{{ t('shop.answered_by_owner') if q.status == 'answered' else t('shop.answered_by_ai') }}</span></li>
+    {% else %}<li class="ks-muted">{{ t('shop.no_questions') }}</li>{% endfor %}</ul>
+</section>
+
+<section class="ks-panel ornate mt-4">{{ m.corners() }}
+  <h2 class="ks-title ks-h2">{{ t('shop.reviews') }}</h2>
+  <ul class="ks-list">{% for r in reviews %}
+    <li><div class="ks-between"><strong>{{ r.review.author_name if not r.author_deleted else t('shop.deleted_user') }}
+      {% if r.author_banned %}<span class="ks-badge danger">{{ t('shop.banned_tag') }}</span>{% endif %}{% if r.author_deleted %}<span class="ks-badge warn">{{ t('shop.deleted_tag') }}</span>{% endif %}</strong>
+      <span class="text-amber-500">{{ '★' * r.review.rating }}{{ '☆' * (5 - r.review.rating) }}</span></div>
+      {% if r.review.text %}<p class="m-0" data-translate>{{ r.review.text }}</p>{% endif %}<span class="ks-small ks-muted">{{ r.review.created_at|dt }} · {{ t('shop.verified_purchase') }}</span></li>
+  {% else %}<li class="ks-muted">{{ t('shop.no_reviews') }}</li>{% endfor %}</ul>
+</section>
+{% endblock %}
+{% block scripts %}<script nonce="{{ csp_nonce }}" src="{{ asset('js/pages/shop.js') }}"></script>{% endblock %}

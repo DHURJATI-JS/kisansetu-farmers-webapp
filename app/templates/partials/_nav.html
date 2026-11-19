@@ -1,0 +1,44 @@
+<header class="ks-header">
+  <div class="ks-header-inner">
+    <a class="ks-logo" href="{{ '/dashboard' if user else '/' }}" aria-label="{{ APP_NAME }}">
+      <img src="/static/img/icon.svg" alt="" width="38" height="38">
+      <span>{{ APP_NAME }}</span>
+    </a>
+    <nav class="ks-nav" aria-label="{{ t('a11y.main_nav') }}">
+      {% if not user %}
+        <a href="/jobs" class="{{ 'active' if path.startswith('/jobs') }}" title="{{ t('nav.jobs') }}"><i data-lucide="briefcase"></i><span class="ks-nav-label">{{ t('nav.jobs') }}</span></a>
+        <a href="/shop" class="{{ 'active' if path.startswith('/shop') }}" title="{{ t('nav.shop') }}"><i data-lucide="store"></i><span class="ks-nav-label">{{ t('nav.shop') }}</span></a>
+        <a href="/schemes" class="{{ 'active' if path.startswith('/schemes') }}" title="{{ t('nav.schemes') }}"><i data-lucide="landmark"></i><span class="ks-nav-label">{{ t('nav.schemes') }}</span></a>
+        <a href="/community" class="{{ 'active' if path.startswith('/community') }}" title="{{ t('nav.community') }}"><i data-lucide="users"></i><span class="ks-nav-label">{{ t('nav.community') }}</span></a>
+      {% elif user.role == 'superadmin' %}
+        <a href="/admin" class="{{ 'active' if path.startswith('/admin') }}" title="{{ t('nav.admin') }}"><i data-lucide="shield-check"></i><span class="ks-nav-label">{{ t('nav.admin') }}</span></a>
+        <a href="/shop" title="{{ t('nav.shop') }}"><i data-lucide="store"></i><span class="ks-nav-label">{{ t('nav.shop') }}</span></a>
+        <a href="/policies" title="{{ t('nav.policies') }}"><i data-lucide="file-check"></i><span class="ks-nav-label">{{ t('nav.policies') }}</span></a>
+      {% else %}
+        <a href="/dashboard" class="{{ 'active' if path == '/dashboard' }}" title="{{ t('nav.dashboard') }}"><i data-lucide="layout-dashboard"></i><span class="ks-nav-label">{{ t('nav.dashboard') }}</span></a>
+        {% if user.role == 'farmer' %}<a href="/jobs" class="{{ 'active' if path.startswith('/jobs') }}" title="{{ t('nav.jobs') }}"><i data-lucide="briefcase"></i><span class="ks-nav-label">{{ t('nav.jobs') }}</span></a>{% endif %}
+        {% if user.role == 'owner' %}<a href="/farms/new" class="{{ 'active' if path == '/farms/new' }}" title="{{ t('nav.farm_new') }}"><i data-lucide="tractor"></i><span class="ks-nav-label">{{ t('nav.farm_new') }}</span></a>{% endif %}
+        <a href="/shop" class="{{ 'active' if path.startswith('/shop') }}" title="{{ t('nav.shop') }}"><i data-lucide="store"></i><span class="ks-nav-label">{{ t('nav.shop') }}</span></a>
+        <a href="/schemes" class="{{ 'active' if path.startswith('/schemes') }}" title="{{ t('nav.schemes') }}"><i data-lucide="landmark"></i><span class="ks-nav-label">{{ t('nav.schemes') }}</span></a>
+        <a href="/assistant" class="{{ 'active' if path.startswith('/assistant') }}" title="{{ t('nav.assistant') }}"><i data-lucide="sparkles"></i><span class="ks-nav-label">{{ t('nav.assistant') }}</span></a>
+      {% endif %}
+    </nav>
+    <div class="ks-spacer"></div>
+    <label class="sr-only" for="ks-lang">{{ t('nav.language') }}</label>
+    <select id="ks-lang" class="ks-select ks-lang" data-lang-select aria-label="{{ t('nav.language') }}">
+      {% for l in LANGUAGES %}<option value="{{ l.code }}" {% if l.code == lang %}selected{% endif %}>{{ l.native }}</option>{% endfor %}
+    </select>
+    <button type="button" class="ks-icon-btn" data-theme-toggle aria-label="{{ t('nav.theme') }}"><i data-lucide="sun-moon"></i></button>
+    <a href="/cart" class="ks-icon-btn ks-bell" aria-label="{{ t('nav.cart') }}"><i data-lucide="shopping-basket"></i><span class="ks-dot ks-hidden" data-cart-count></span></a>
+    {% if user %}
+      <a href="/notifications" class="ks-icon-btn ks-bell" aria-label="{{ t('nav.notifications') }}"><i data-lucide="bell"></i><span class="ks-dot {{ '' if unread else 'ks-hidden' }}" data-unread>{{ unread or '' }}</span></a>
+      <a href="/account" class="ks-hide-phone" aria-label="{{ t('nav.account') }}">
+        {% if user.photo_path %}<img class="ks-avatar" src="/media/{{ user.photo_path }}" alt="">{% else %}<span class="ks-icon-btn"><i data-lucide="user-round"></i></span>{% endif %}
+      </a>
+      <button type="button" class="ks-icon-btn" data-logout aria-label="{{ t('nav.logout') }}"><i data-lucide="log-out"></i></button>
+    {% else %}
+      <a class="ks-btn ks-btn-ghost ks-btn-sm ks-hide-phone" href="/login">{{ t('nav.login') }}</a>
+      <a class="ks-btn ks-btn-sm" href="/signup">{{ t('nav.signup') }}</a>
+    {% endif %}
+  </div>
+</header>

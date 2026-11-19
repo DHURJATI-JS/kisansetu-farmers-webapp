@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% import "partials/_macros.html" as m with context %}
+{% block title %}{{ t('proof.title') }}{% endblock %}
+{% block ai_widget %}{% endblock %}
+{% block content %}
+<section class="ks-panel ornate max-w-2xl mx-auto mt-6">{{ m.corners() }}
+  <div class="ks-between"><h1 class="ks-title ks-h2 m-0">{{ t('proof.title') }}</h1>
+    <span class="ks-badge"><i data-lucide="badge-check"></i>{{ t('proof.verified') }}</span></div>
+  <div class="ks-grid cols-2 mt-3">
+    {{ m.stat(t('field.amount'), pay.amount|inr, 'badge-indian-rupee') }}
+    {{ m.stat(t('payment.method'), t('pay.' ~ pay.method), 'wallet') }}
+  </div>
+  <ul class="ks-list mt-3">
+    <li>{{ t('payment.farm') }}: <strong>{{ farm.name }}</strong></li>
+    <li>{{ t('payment.employee') }}: {{ pay.employee_name }}</li>
+    <li>{{ t('payment.recorded') }}: {{ pay.created_at|dt }}</li>
+    {% if pay.upi_ref %}<li>{{ t('payment.ref') }}: <code>{{ pay.upi_ref }}</code></li>{% endif %}
+    {% if pay.tds_portion > 0 %}<li>{{ t('payment.tds', amount=pay.tds_portion|inr) }}</li>{% endif %}
+  </ul>
+  <h2 class="ks-title ks-h3 mt-4">{{ t('payment.proof') }}</h2>
+  <img class="rounded-xl border w-full" src="/proof/{{ token }}/image" alt="{{ t('payment.proof') }}">
+  <p class="ks-small ks-muted mt-3"><i data-lucide="lock" class="inline w-4 h-4"></i> {{ t('proof.note', date=expires) }}</p>
+  <p class="ks-small"><a href="/login">{{ t('proof.signin') }}</a></p>
+</section>
+{% endblock %}

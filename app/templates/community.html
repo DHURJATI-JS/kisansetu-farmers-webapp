@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% import "partials/_macros.html" as m with context %}
+{% block title %}{{ t('nav.community') }}{% endblock %}
+{% block content %}
+<h1 class="ks-title ks-h1">{{ t('community.title') }}</h1>
+<p class="ks-muted">{{ t('community.lead') }}</p>
+<form class="ks-row mb-4" method="get" action="/community" role="search">
+  <label class="sr-only" for="cm-city">{{ t('jobs.city') }}</label>
+  <input id="cm-city" name="city" class="ks-input max-w-xs" list="cm-cities" value="{{ city }}" placeholder="{{ t('jobs.city') }}" maxlength="60">
+  <datalist id="cm-cities">{% for c in cities %}<option value="{{ c }}">{% endfor %}</datalist>
+  <button class="ks-btn" type="submit"><i data-lucide="search"></i>{{ t('jobs.search_btn') }}</button>
+</form>
+<div class="ks-grid cols-3">
+{% for p in people %}
+  <article class="ks-card hover">
+    <div class="flex items-center gap-3">
+      {% if p.photo_path %}<img class="ks-avatar lg" src="/media/{{ p.photo_path }}" alt="{{ p.full_name }}" loading="lazy">{% endif %}
+      <div><strong>{{ p.full_name }}</strong><div class="ks-small ks-muted">{{ [p.city, p.state]|select|join(', ') }}</div>
+        {% if p.skills %}<div class="ks-small" data-translate>{{ p.skills }}</div>{% endif %}</div>
+    </div>
+    {% if user and p.contact_visible and user.status == 'active' and user.role in ('farmer', 'owner') %}
+    <div class="ks-row mt-2"><a class="ks-btn ks-btn-sm" href="tel:{{ p.phone }}"><i data-lucide="phone"></i>{{ t('community.call') }}</a>
+      {% if p.email %}<a class="ks-btn ks-btn-ghost ks-btn-sm" href="mailto:{{ p.email }}"><i data-lucide="mail"></i>{{ t('community.email') }}</a>{% endif %}</div>
+    {% elif not user %}<p class="ks-small ks-muted mt-2">{{ t('community.login_to_contact') }}</p>{% endif %}
+  </article>
+{% else %}{{ m.empty(t('community.none'), 'users') }}{% endfor %}
+</div>
+<div class="ks-row mt-4">{% if page > 1 %}<a class="ks-btn ks-btn-ghost" href="?page={{ page - 1 }}&city={{ city|urlencode }}">{{ t('common.prev') }}</a>{% endif %}
+  {% if has_more %}<a class="ks-btn ks-btn-ghost" href="?page={{ page + 1 }}&city={{ city|urlencode }}">{{ t('common.next') }}</a>{% endif %}</div>
+{% endblock %}

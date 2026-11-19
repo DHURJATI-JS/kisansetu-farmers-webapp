@@ -1,0 +1,123 @@
+{% extends "base.html" %}
+{% import "partials/_macros.html" as m with context %}
+{% block title %}{{ t('nav.dashboard') }}{% endblock %}
+{% block content %}
+<div class="ks-between mb-4">
+  <div>
+    <h1 class="ks-title ks-h1 m-0">{{ t('dash.hello', name=user.full_name.split(' ')[0]) }}</h1>
+    <p class="ks-muted m-0">{{ t('role.' ~ user.role) }} · {{ [user.city, user.state]|select|join(', ') }}</p>
+  </div>
+  {% if not user.photo_verified %}<a class="ks-btn ks-btn-gold" href="/onboarding"><i data-lucide="camera"></i>{{ t('dash.add_photo') }}</a>{% endif %}
+</div>
+
+{% if survey %}
+<a href="/survey" class="ks-alert warn no-underline text-inherit ks-reveal"><i data-lucide="heart-handshake"></i><div><strong>{{ t('dash.survey_title') }}</strong><div class="ks-small">{{ t('dash.survey_body') }}</div></div></a>
+{% endif %}
+
+{% for inv, farm_name in invitations %}
+<div class="ks-alert info" id="invitations"><i data-lucide="mail-open"></i>
+  <div class="flex-1"><strong>{{ t('dash.invite', farm=farm_name, role=t('role.' ~ inv.role)) }}</strong>
+    {% if inv.salary_amount %}<div class="ks-small">{{ inv.salary_amount|inr }} / {{ t('salary.' ~ inv.salary_type) }}</div>{% endif %}
+    <div class="ks-row mt-2">
+      {% if working_at and working_at.status == 'active' and inv.role != 'co_owner' %}<div class="ks-small w-full">{{ t('dash.invite_has_job', farm=working_at.farm) }}</div>
+      {% else %}{% if working_at and inv.role != 'co_owner' %}<div class="ks-small w-full">{{ t('dash.invite_ends_notice', farm=working_at.farm) }}</div>{% endif %}<button class="ks-btn ks-btn-sm" data-invite-accept="{{ inv.id }}" data-worker="{{ '1' if inv.role in ('employee', 'supervisor') else '0' }}"><i data-lucide="check"></i>{{ t('common.accept') }}</button>{% endif %}
+      <button class="ks-btn ks-btn-ghost ks-btn-sm" data-action="invitation.respond" data-payload='{{ {"invitation_id": inv.id|string, "accept": false}|tojson }}'>{{ t('common.decline') }}</button>
+      <a class="ks-small" href="/f/{{ inv.farm_id }}#terms" target="_blank" rel="noopener">{{ t('dash.read_terms') }}</a>
+    </div>
+  </div>
+</div>
+{% endfor %}
+
+{# ---------------- my jobs (workers, and leaders' own pay) ---------------- #}
+{% for j in jobs or [] %}
+{% set mem, jfarm, jbranch, money = j.mem, j.farm, j.branch, j.money %}
+<section class="ks-panel ornate mb-6 ks-reveal" data-guide="my-job">{{ m.corners() }}
+  <div class="ks-between"><h2 class="ks-title ks-h2 m-0">{{ t('dash.my_job') }}</h2>{{ m.status_badge(t, mem.status) }}</div>
+  <p class="m-0"><strong>{{ jfarm.name }}</strong>{% if jbranch %} · {{ jbranch.name }}{% endif %} · {{ t('role.' ~ mem.role) }}</p>
+  <p class="ks-small ks-muted">{{ t('dash.joined', date=mem.joined_on|d) }} · {{ mem.salary_amount|inr }} / {{ t('salary.' ~ mem.salary_type) }}
+    {% if jbranch %} · {{ jbranch.work_start.strftime('%H:%M') }}–{{ jbranch.work_end.strftime('%H:%M') }}{% endif %}</p>
+  {% if mem.status == 'notice' %}<div class="ks-alert warn"><i data-lucide="calendar-clock"></i><div>{{ t('dash.notice', date=mem.notice_end_date|d) }}
+    {% if mem.notice_kind == 'individual' and mem.notice_reason %}<div class="ks-small">{{ t('dash.notice_reason', reason=mem.notice_reason) }}</div>{% endif %}
+    {% if j.paused %}<div class="ks-small">{{ t('dash.powers_paused', role=t('role.' ~ mem.role)) }}</div>{% endif %}</div></div>{% endif %}
+  {% if mem.status == 'ended' %}<div class="ks-alert info"><i data-lucide="door-closed"></i><div>{{ t('dash.job_ended', date=mem.ended_on|d) }}{% if money.due > 0 %} {{ t('dash.still_owed', amount=money.due|inr) }}{% endif %}</div></div>{% endif %}
+  <div class="ks-grid cols-4 mt-3" data-guide="pay-stats">
+    {{ m.stat(t('dash.earned'), money.gross|inr, 'wallet') }}
+    {{ m.stat(t('dash.paid'), money.paid|inr, 'badge-check') }}
+    {{ m.stat(t('dash.due'), money.due|inr, 'hourglass') }}
+    {{ m.stat(t('dash.overdue'), money.overdue|inr, 'alarm-clock') }}
+  </div>
+  <p class="ks-small ks-muted mt-2">{{ t('dash.next_due', date=billing_due|d) }}{% if money.tds > 0 %} · {{ t('dash.tds', amount=money.tds|inr) }}{% endif %}</p>
+  {% if j.contacts %}
+  <h3 class="ks-h3 mt-4">{{ t('dash.contacts') }}</h3>
+  <ul class="ks-list" data-guide="contacts">{% for c in j.contacts %}
+    <li class="ks-between flex-wrap gap-2"><span><strong>{{ c.name }}</strong> · {{ t('role.' ~ c.role) }}</span>
+      <span class="ks-row"><a class="ks-btn ks-btn-sm" href="tel:{{ c.phone }}" aria-label="{{ t('dash.call', name=c.name) }}"><i data-lucide="phone"></i>{{ c.phone }}</a>
+        <a class="ks-btn ks-btn-ghost ks-btn-sm" href="https://wa.me/{{ c.phone|replace('+', '') }}" target="_blank" rel="noopener noreferrer"><i data-lucide="message-circle"></i>{{ t('dash.whatsapp') }}</a></span></li>{% endfor %}</ul>
+  {% endif %}
+  {% if j.payments %}
+  <h3 class="ks-h3 mt-4">{{ t('dash.recent_payments') }}</h3>
+  <ul class="ks-list">{% for p in j.payments %}<li class="ks-between"><span>{{ p.created_at|dt }} · {{ t('pay.' ~ p.method) }}</span><span><strong>{{ p.amount|inr }}</strong> <a href="/payments/{{ p.id }}">{{ t('dash.proof') }}</a></span></li>{% endfor %}</ul>
+  {% endif %}
+  <div class="ks-row mt-4">
+    <a class="ks-btn ks-btn-ghost" href="/report"><i data-lucide="megaphone"></i>{{ t('nav.report') }}</a>
+    <a class="ks-btn ks-btn-ghost" href="/account/statement"><i data-lucide="book-open"></i>{{ t('stmt.mine') }}</a>
+    {% if mem.status != 'ended' %}<button class="ks-btn ks-btn-danger ks-btn-sm" data-action="member.resign" data-payload='{{ {"member_id": mem.id|string}|tojson }}'><i data-lucide="door-open"></i>{{ t('dash.resign') }}</button>{% endif %}
+  </div>
+</section>
+{% endfor %}
+
+{# ---------------- owner / leaders ---------------- #}
+{% if farms is defined %}
+<section class="mb-6">
+  <div class="ks-between mb-3"><h2 class="ks-title ks-h2 m-0">{{ t('dash.my_farms') }}</h2>
+    {% if user.role == 'owner' %}<a class="ks-btn ks-btn-gold" href="/farms/new"><i data-lucide="plus"></i>{{ t('nav.farm_new') }}</a>{% endif %}</div>
+  {% for p, fname in proposals %}
+  <a class="ks-alert warn no-underline text-inherit" href="/farms/{{ p.farm_id }}?tab=proposals#p-{{ p.id }}"><i data-lucide="vote"></i><div>{{ t('dash.proposal', farm=fname, what=t('action.name.' ~ p.action_type)) }}</div></a>
+  {% endfor %}
+  {% if questions %}<div class="ks-alert info"><i data-lucide="message-circle-question"></i><div>{{ t('dash.questions', n=questions) }}</div></div>{% endif %}
+  <div class="ks-grid cols-2">
+  {% for f in farms %}
+    {% set d = dues[f.id] %}
+    <a class="ks-card hover no-underline text-inherit ks-reveal" href="/farms/{{ f.id }}">
+      <div class="ks-between"><h3 class="ks-title ks-h3 m-0">{{ f.name }}</h3>{{ m.status_badge(t, f.status) }}</div>
+      <p class="ks-small ks-muted">{{ t('farming.' ~ f.farming_type) }} · {{ t('role.' ~ roles[f.id]) }}</p>
+      <div class="ks-row ks-small"><span>{{ t('dash.employees', n=d.employees) }}</span><span>· {{ t('dash.due') }}: <strong>{{ d.due|inr }}</strong></span>
+        {% if d.overdue > 0 %}<span class="ks-badge danger">{{ t('dash.overdue') }} {{ d.overdue|inr }}</span>{% elif d.due_soon > 0 %}<span class="ks-badge warn">{{ t('dash.due_by', date=billing_due|d) }}</span>{% endif %}</div>
+      {% for h in halts.get(f.id, []) %}<div class="ks-badge danger mt-2">{{ t('halt.reason.' ~ h.reason) }}</div>{% endfor %}
+    </a>
+  {% else %}
+    {% if user.role == 'owner' %}{{ m.empty(t('dash.no_farms'), 'tractor') }}{% endif %}
+  {% endfor %}
+  </div>
+  {% if alerts %}
+  <h3 class="ks-h3 mt-4 flex items-center gap-2"><i data-lucide="cloud-lightning"></i>{{ t('dash.weather_alerts') }}</h3>
+  <ul class="ks-list">{% for w, bname in alerts if (w.alerts or w.calamities or w.crop_warnings) %}
+    <li><strong>{{ bname }}</strong>: {{ t('dash.alert_counts', a=(w.alerts or [])|length, c=(w.calamities or [])|length, cw=(w.crop_warnings or [])|length) }}
+      {% if w.advisory %}<div class="ks-small" data-translate>{{ w.advisory }}</div>{% endif %}</li>{% endfor %}</ul>
+  {% endif %}
+</section>
+{% endif %}
+
+{% if user.role == 'farmer' %}
+<a class="ks-card hover no-underline text-inherit mb-6 flex items-center gap-3" href="/account#become-owner"><i data-lucide="tractor"></i>
+  <div><strong>{{ t('owner_up.dash_title') }}</strong><div class="ks-small ks-muted">{{ t('owner_up.dash_help') }}</div></div></a>
+{% endif %}
+{% if applications %}
+<section class="ks-panel mb-6"><h2 class="ks-title ks-h3">{{ t('dash.applications') }}</h2>
+  <ul class="ks-list">{% for a, title, fname in applications %}<li class="ks-between"><span>{{ title }} · {{ fname }}</span>{{ m.status_badge(t, a.status) }}</li>{% endfor %}</ul>
+</section>
+{% endif %}
+
+{% if orders is defined and orders %}
+<section class="ks-panel mb-6"><div class="ks-between"><h2 class="ks-title ks-h3 m-0">{{ t('dash.recent_orders') }}</h2><a href="/orders">{{ t('common.see_all') }}</a></div>
+  <ul class="ks-list">{% for o in orders %}<li class="ks-between"><span>{{ o.order.order_no }} · {{ o.shop_name }}</span><span>{{ o.order.total|inr }} {{ m.status_badge(t, o.order.status) }}</span></li>{% endfor %}</ul>
+</section>
+{% endif %}
+
+<section class="ks-grid cols-3">
+  <a class="ks-card hover no-underline text-inherit" href="/schemes"><i data-lucide="landmark"></i><h3 class="ks-h3">{{ t('nav.schemes') }}</h3><p class="ks-small ks-muted">{{ t('dash.schemes_hint') }}</p></a>
+  <a class="ks-card hover no-underline text-inherit" href="/assistant"><i data-lucide="sparkles"></i><h3 class="ks-h3">{{ t('nav.assistant') }}</h3><p class="ks-small ks-muted">{{ t('dash.ai_hint') }}</p></a>
+  <a class="ks-card hover no-underline text-inherit" href="/community"><i data-lucide="users"></i><h3 class="ks-h3">{{ t('nav.community') }}</h3><p class="ks-small ks-muted">{{ t('dash.community_hint') }}</p></a>
+</section>
+{% endblock %}
+{% block scripts %}<script nonce="{{ csp_nonce }}" src="{{ asset('js/pages/dashboard.js') }}"></script>{% endblock %}

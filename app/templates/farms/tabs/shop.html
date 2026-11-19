@@ -1,0 +1,125 @@
+{% if not shop %}
+<section class="ks-panel ornate max-w-2xl">{{ m.corners() }}
+  <h2 class="ks-title ks-h3">{{ t('shop.create_title') }}</h2>
+  <p class="ks-small ks-muted">{{ t('shop.create_help') }}</p>
+  <form data-action-form="shop.create" data-payload='{{ {"farm_id": farm.id|string}|tojson }}'>
+    {{ m.field('name', t('field.shop_name'), required=True, value=farm.name ~ ' ' ~ t('shop.suffix'), attrs='maxlength="120"') }}
+    {{ m.field('description', t('field.description'), type='textarea', optional=True, attrs='maxlength="2000"') }}
+    <div class="ks-grid cols-3">
+      {{ m.field('courier_base_fee', t('field.courier_base'), type='number', dtype='number', value=40, attrs='min="0" step="1"') }}
+      {{ m.field('courier_per_km', t('field.courier_per_km'), type='number', dtype='number', value=5, attrs='min="0" step="0.5"') }}
+      {{ m.field('delivery_radius_km', t('field.delivery_radius'), type='number', dtype='int', value=50, attrs='min="1" max="1000"') }}
+    </div>
+    <label class="ks-check"><input type="checkbox" name="accepts_delivery" checked><span>{{ t('shop.accepts_delivery') }}</span></label>
+    <label class="ks-check"><input type="checkbox" name="accepts_pickup" checked><span>{{ t('shop.accepts_pickup') }}</span></label>
+    <p class="ks-small ks-muted">{{ t('shop.cod_note') }}</p>
+    <button class="ks-btn ks-btn-gold" type="submit"><i data-lucide="store"></i>{{ t('shop.create') }}</button>
+  </form>
+</section>
+{% else %}
+{% if questions %}
+<section class="ks-panel ornate mb-4">{{ m.corners() }}
+  <h2 class="ks-title ks-h3 flex items-center gap-2"><i data-lucide="message-circle-question"></i>{{ t('shop.questions') }}</h2>
+  {% for q, pname in questions %}
+  <div class="ks-card mb-2" id="q-{{ q.id }}">
+    <div class="ks-small ks-muted">{{ pname }} · {{ q.created_at|dt }}</div>
+    <p class="m-0" data-translate>{{ q.question }}</p>
+    {% if q.ai_answer %}<p class="ks-small ks-muted">{{ t('shop.ai_guess') }}: <span data-translate>{{ q.ai_answer }}</span> ({{ (q.ai_confidence * 100)|round|int }}%)</p>{% endif %}
+    <form class="flex gap-2 items-end mt-2" data-action-form="question.answer" data-payload='{{ {"question_id": q.id|string}|tojson }}'>
+      <textarea class="ks-textarea" name="answer" rows="2" required maxlength="2000" placeholder="{{ t('shop.your_answer') }}"></textarea>
+      <button class="ks-btn ks-btn-sm whitespace-nowrap" type="submit">{{ t('shop.answer') }}</button>
+    </form>
+  </div>
+  {% endfor %}
+</section>
+{% endif %}
+
+<section class="ks-panel ornate mb-4">{{ m.corners() }}
+  <div class="ks-between"><h2 class="ks-title ks-h3 m-0">{{ t('shop.orders') }}</h2><a href="/shop/s/{{ shop.id }}" class="ks-btn ks-btn-ghost ks-btn-sm">{{ t('shop.view_shop') }}</a></div>
+  <div class="ks-table-wrap"><table class="ks-table">
+    <thead><tr><th>#</th><th>{{ t('shop.buyer') }}</th><th>{{ t('shop.items') }}</th><th>{{ t('shop.total') }}</th><th>{{ t('field.status') }}</th><th></th></tr></thead>
+    <tbody>{% for row in orders %}{% set o = row.order %}<tr>
+      <td>{{ o.order_no }}<div class="ks-small ks-muted">{{ o.created_at|dt }}</div></td>
+      <td>{{ o.buyer_name }}<div class="ks-small"><a href="tel:{{ o.buyer_phone }}">{{ o.buyer_phone }}</a></div>{% if o.delivery_address %}<div class="ks-small ks-muted">{{ o.delivery_address }}</div>{% endif %}</td>
+      <td class="ks-small">{% for it in row['items'] %}{{ it.product_name }} × {{ it.qty }} {{ t('unit.' ~ it.unit) }}<br>{% endfor %}</td>
+      <td>{{ o.total|inr }}<div class="ks-small ks-muted">{{ t('shop.' ~ o.fulfilment) }} · {{ t('shop.courier') }} {{ o.courier_charge|inr }}</div></td>
+      <td>{{ m.status_badge(t, o.status) }}</td>
+      <td class="whitespace-nowrap">
+        {% set nxt = {'placed': ['confirmed'], 'confirmed': (['dispatched'] if o.fulfilment == 'delivery' else ['ready_for_pickup']), 'dispatched': ['delivered'], 'ready_for_pickup': ['picked_up']}.get(o.status, []) %}
+        {% for s in nxt %}<button class="ks-btn ks-btn-sm" data-action="order.update" data-payload='{{ {"order_id": o.id|string, "to": s}|tojson }}'>{{ t('order.do.' ~ s) }}</button>{% endfor %}
+        {% if o.status in ('placed', 'confirmed', 'dispatched', 'ready_for_pickup') %}<button class="ks-btn ks-btn-ghost ks-btn-sm" data-action="order.update" data-payload='{{ {"order_id": o.id|string, "to": "cancelled"}|tojson }}' data-prompt="js.prompt_reason">{{ t('common.cancel') }}</button>{% endif %}
+      </td></tr>
+    {% else %}<tr><td colspan="6">{{ m.empty(t('shop.no_orders'), 'package') }}</td></tr>{% endfor %}</tbody>
+  </table></div>
+</section>
+
+<section class="ks-panel ornate mb-4">{{ m.corners() }}
+  <h2 class="ks-title ks-h3">{{ t('shop.products') }}</h2>
+  <div class="ks-table-wrap"><table class="ks-table">
+    <thead><tr><th>{{ t('field.name') }}</th><th>{{ t('field.price') }}</th><th>{{ t('shop.stock') }}</th><th>{{ t('field.status') }}</th><th>{{ t('shop.adjust_stock') }}</th></tr></thead>
+    <tbody>{% for p in products %}<tr>
+      <td><a href="/shop/p/{{ p.id }}">{{ p.name }}</a><div class="ks-small ks-muted">{{ t('cat.' ~ p.category) }} · v{{ p.version }} · {{ p.updated_at|dt }}</div></td>
+      <td>{{ p.price|inr }}/{{ t('unit.' ~ p.unit) }} <button class="ks-icon-btn" data-action="product.update" data-payload='{{ {"product_id": p.id|string, "expected_version": p.version}|tojson }}' data-prompt="js.prompt_price" data-prompt-field="price" data-prompt-type="number" aria-label="{{ t('shop.edit_price') }}"><i data-lucide="pencil"></i></button></td>
+      <td>{{ p.stock }} {{ t('unit.' ~ p.unit) }}</td>
+      <td>{{ m.status_badge(t, p.status) }} <button class="ks-btn ks-btn-ghost ks-btn-sm" data-action="product.update" data-payload='{{ {"product_id": p.id|string, "expected_version": p.version, "status": ("inactive" if p.status == "active" else "active")}|tojson }}'>{{ t('shop.deactivate') if p.status == 'active' else t('shop.activate') }}</button></td>
+      <td><form class="flex gap-1 items-center" data-stock-form data-product="{{ p.id }}" data-version="{{ p.version }}">
+        <input class="ks-input w-24" type="number" step="0.01" name="delta" required aria-label="{{ t('shop.delta') }}" placeholder="±">
+        <select class="ks-select w-32" name="reason" aria-label="{{ t('shop.reason') }}">{% for r in ['restock','harvest','correction','damaged','sold_offline'] %}<option value="{{ r }}">{{ t('inv.' ~ r) }}</option>{% endfor %}</select>
+        <button class="ks-btn ks-btn-sm" type="submit">{{ t('common.save') }}</button></form></td></tr>
+    {% else %}<tr><td colspan="5">{{ m.empty(t('shop.no_products'), 'package-open') }}</td></tr>{% endfor %}</tbody>
+  </table></div>
+</section>
+
+<div class="ks-grid cols-2">
+<section class="ks-panel ornate">{{ m.corners() }}
+  <h2 class="ks-title ks-h3">{{ t('shop.add_product') }}</h2>
+  <form id="product-form" data-shop="{{ shop.id }}">
+    {{ m.field('name', t('field.product_name'), required=True, attrs='maxlength="120"') }}
+    {{ m.field('description', t('field.description'), type='textarea', optional=True, attrs='maxlength="2000"', help=t('shop.desc_help')) }}
+    <div class="ks-grid cols-2">
+      {% set bopts = [] %}{% for b in branches if b.status == 'active' %}{% set _ = bopts.append((b.id|string, b.name)) %}{% endfor %}
+      {{ m.select('branch_id', t('shop.pickup_branch'), bopts, required=True) }}
+      {% set copts = [] %}{% for c in categories %}{% set _ = copts.append((c, t('cat.' ~ c))) %}{% endfor %}
+      {{ m.select('category', t('field.category'), copts, 'vegetables') }}
+      {% set uopts = [] %}{% for u in units %}{% set _ = uopts.append((u, t('unit.' ~ u))) %}{% endfor %}
+      {{ m.select('unit', t('field.unit'), uopts, 'kg') }}
+      {{ m.field('price', t('field.price'), type='number', dtype='number', required=True, attrs='min="0.01" step="0.01"') }}
+      {{ m.field('stock', t('shop.stock'), type='number', dtype='number', value=0, attrs='min="0" step="0.01"') }}
+      {{ m.field('min_order_qty', t('field.min_order'), type='number', dtype='number', value=1, attrs='min="0.01" step="0.01"') }}
+    </div>
+    <div class="ks-field"><label class="ks-label" for="product-images">{{ t('field.photos') }}</label><input id="product-images" type="file" accept="image/*" multiple class="ks-input" data-skip><button type="button" class="ks-btn ks-btn-ghost ks-btn-sm mt-2" data-camera data-facing="environment"><i data-lucide="camera"></i>{{ t('camera.live') }}</button></div>
+    <button class="ks-btn ks-btn-gold" type="submit"><i data-lucide="plus"></i>{{ t('shop.add_product') }}</button>
+  </form>
+</section>
+<section class="ks-panel ornate">{{ m.corners() }}
+  <h2 class="ks-title ks-h3">{{ t('shop.settings') }}</h2>
+  <form data-action-form="shop.update" data-payload='{{ {"shop_id": shop.id|string}|tojson }}'>
+    {{ m.field('name', t('field.shop_name'), value=shop.name, attrs='maxlength="120"', id='s-name') }}
+    <div class="ks-grid cols-3">
+      {{ m.field('courier_base_fee', t('field.courier_base'), type='number', dtype='number', value=shop.courier_base_fee, attrs='min="0" step="1"', id='s-base') }}
+      {{ m.field('courier_per_km', t('field.courier_per_km'), type='number', dtype='number', value=shop.courier_per_km, attrs='min="0" step="0.5"', id='s-km') }}
+      {{ m.field('delivery_radius_km', t('field.delivery_radius'), type='number', dtype='int', value=shop.delivery_radius_km, attrs='min="1"', id='s-radius') }}
+    </div>
+    <label class="ks-check"><input type="checkbox" name="accepts_delivery" {% if shop.accepts_delivery %}checked{% endif %}><span>{{ t('shop.accepts_delivery') }}</span></label>
+    <label class="ks-check"><input type="checkbox" name="accepts_pickup" {% if shop.accepts_pickup %}checked{% endif %}><span>{{ t('shop.accepts_pickup') }}</span></label>
+    <button class="ks-btn" type="submit">{{ t('common.save') }}</button>
+  </form>
+</section>
+{% if perms.settings %}
+<section class="ks-panel ornate">{{ m.corners() }}
+  <h2 class="ks-title ks-h3 text-red-600">{{ t('shop.close_title') }}</h2>
+  {% if shop.status == 'open' %}
+    <p class="ks-small ks-muted">{{ t('shop.close_help') }}</p>
+    <ul class="ks-list ks-small"><li>{{ t('shop.close_will_cancel', n=shop_close[0]) }}</li><li>{{ t('shop.close_must_deliver', n=shop_close[1]) }}</li></ul>
+    <button class="ks-btn ks-btn-danger mt-2" data-action="shop.close" data-payload='{{ {"shop_id": shop.id|string, "cancel_open_orders": true}|tojson }}'><i data-lucide="store"></i>{{ t('shop.close_cancel_btn', n=shop_close[0]) if shop_close[0] else t('shop.close_btn') }}</button>
+  {% elif shop.status == 'closing' %}
+    <div class="ks-alert warn"><i data-lucide="truck"></i><div>{{ t('shop.closing_banner', n=shop_close[1]) }}</div></div>
+    <button class="ks-btn ks-btn-ghost mt-2" data-action="shop.update" data-payload='{{ {"shop_id": shop.id|string, "status": "open"}|tojson }}'><i data-lucide="rotate-ccw"></i>{{ t('shop.reopen') }}</button>
+  {% else %}
+    <div class="ks-alert info"><i data-lucide="store"></i><div>{{ t('shop.closed_banner') }}</div></div>
+    <button class="ks-btn mt-2" data-action="shop.update" data-payload='{{ {"shop_id": shop.id|string, "status": "open"}|tojson }}'><i data-lucide="rotate-ccw"></i>{{ t('shop.reopen') }}</button>
+  {% endif %}
+</section>
+{% endif %}
+</div>
+{% endif %}

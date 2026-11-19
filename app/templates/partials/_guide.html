@@ -1,0 +1,55 @@
+{# Kisan Didi — the talking guide (a farmer in a green kurta with a mustard dupatta over her head and a checked gamchha
+   on her shoulder). Static SVG: guide.js only moves her lips, eyes, eyebrows and head; nothing is injected as HTML. #}
+{% macro face(animated=False) %}
+<svg viewBox="0 0 160 160" class="ks-av" {% if animated %}data-av-root role="img" aria-label="{{ t('guide.avatar') }}"{% else %}aria-hidden="true" focusable="false"{% endif %}>
+  <defs>
+    <linearGradient id="avSky{{ 'A' if animated else 'S' }}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#bfe3f2"/><stop offset="1" stop-color="#e9f6ee"/></linearGradient>
+    <pattern id="avCheck{{ 'A' if animated else 'S' }}" width="8" height="8" patternUnits="userSpaceOnUse"><rect width="8" height="8" fill="#b83227"/><rect width="4" height="4" fill="#e9a23b"/><rect x="4" y="4" width="4" height="4" fill="#e9a23b"/></pattern>
+  </defs>
+  <circle cx="80" cy="80" r="79" fill="url(#avSky{{ 'A' if animated else 'S' }})"/>
+  <path d="M1 114 Q40 104 80 108 Q120 104 159 114 L159 160 L1 160Z" fill="#7cb342" opacity=".6"/>
+  <path d="M14 112 L18 98 M22 111 L24 96 M136 110 L140 97 M144 112 L146 99" stroke="#c9a227" stroke-width="2" stroke-linecap="round"/>
+  <g data-av="head">
+    <path d="M37 72 Q38 20 80 18 Q122 20 123 72 L130 122 L30 122Z" fill="#e3a43a"/>
+    <path d="M28 160 L33 130 Q43 113 66 108 L94 108 Q117 113 127 130 L132 160Z" fill="#2e7d32"/>
+    <path d="M66 108 L80 125 L94 108" fill="none" stroke="#f4d03f" stroke-width="3" stroke-linejoin="round"/>
+    <path d="M40 160 L44 136 M120 160 L116 136" stroke="#256b29" stroke-width="2"/>
+    <path d="M98 110 Q121 115 129 139 L121 160 L105 160 Q110 135 91 120Z" fill="url(#avCheck{{ 'A' if animated else 'S' }})"/>
+    <path d="M70 92 L70 110 Q80 117 90 110 L90 92Z" fill="#a8683f"/>
+    <ellipse cx="50.5" cy="73" rx="5" ry="8" fill="#b97a50"/><ellipse cx="109.5" cy="73" rx="5" ry="8" fill="#b97a50"/>
+    <circle cx="50.5" cy="84" r="3.2" fill="#f1c40f" stroke="#b7950b" stroke-width=".8"/><circle cx="109.5" cy="84" r="3.2" fill="#f1c40f" stroke="#b7950b" stroke-width=".8"/>
+    <ellipse cx="80" cy="70" rx="29" ry="34" fill="#c98c5f"/>
+    <path d="M51 63 Q52 38 80 36 Q108 38 109 63 Q101 48 80 47 Q59 48 51 63Z" fill="#2b1a12"/>
+    <path d="M44 67 Q41 25 80 23 Q119 25 116 67 Q112 39 80 37 Q48 39 44 67Z" fill="#f0b23f"/>
+    <path d="M44 67 Q41 25 80 23 Q119 25 116 67" fill="none" stroke="#b83227" stroke-width="3"/>
+    <circle cx="80" cy="54.5" r="2.3" fill="#b83227"/>
+    <path data-av="brow-l" d="M61.5 57.5 Q68 53 74.5 56" fill="none" stroke="#2b1a12" stroke-width="2.4" stroke-linecap="round"/>
+    <path data-av="brow-r" d="M85.5 56 Q92 53 98.5 57.5" fill="none" stroke="#2b1a12" stroke-width="2.4" stroke-linecap="round"/>
+    <g data-av="eye-l"><ellipse cx="68" cy="66" rx="5.4" ry="3.7" fill="#fff"/><circle data-av="iris-l" cx="68" cy="66.3" r="2.5" fill="#3b2314"/><circle cx="68.9" cy="65.3" r=".75" fill="#fff"/>
+      <path d="M62.3 64.2 Q68 60.8 73.7 64.2" fill="none" stroke="#1a0f0a" stroke-width="1.3" stroke-linecap="round"/></g>
+    <g data-av="eye-r"><ellipse cx="92" cy="66" rx="5.4" ry="3.7" fill="#fff"/><circle data-av="iris-r" cx="92" cy="66.3" r="2.5" fill="#3b2314"/><circle cx="92.9" cy="65.3" r=".75" fill="#fff"/>
+      <path d="M86.3 64.2 Q92 60.8 97.7 64.2" fill="none" stroke="#1a0f0a" stroke-width="1.3" stroke-linecap="round"/></g>
+    <path d="M80 68 Q78.2 77.5 76 80 Q80 82.3 84 80" fill="none" stroke="#9a6038" stroke-width="1.6" stroke-linecap="round"/>
+    <circle cx="84.6" cy="80.4" r="2.3" fill="none" stroke="#f1c40f" stroke-width="1.1"/>
+    <ellipse cx="63.5" cy="80" rx="5" ry="3" fill="#e0806f" opacity=".35"/><ellipse cx="96.5" cy="80" rx="5" ry="3" fill="#e0806f" opacity=".35"/>
+    <ellipse data-av="mouth" cx="80" cy="90" rx="7" ry=".9" fill="#6b1f24" stroke="#a8434d" stroke-width="2.1"/>
+    <path data-av="smile" d="M71.5 88.6 Q80 94.2 88.5 88.6" fill="none" stroke="#a8434d" stroke-width="2.3" stroke-linecap="round"/>
+  </g>
+</svg>
+{% endmacro %}
+<div class="ks-spot ks-hidden" data-guide-spot aria-hidden="true"></div>
+<section class="ks-guide ks-hidden" data-guide-dock role="dialog" aria-modal="false" aria-labelledby="ks-guide-title" aria-describedby="ks-guide-text">
+  <div class="ks-guide-face">{{ face(True) }}</div>
+  <div class="ks-guide-bubble">
+    <div class="ks-between"><strong id="ks-guide-title" class="ks-guide-title">{{ t('guide.hello_title') }}</strong>
+      <button type="button" class="ks-icon-btn" data-guide-close aria-label="{{ t('js.close') }}"><i data-lucide="x"></i></button></div>
+    <p id="ks-guide-text" class="ks-guide-text" aria-live="polite"></p>
+    <div class="ks-row ks-guide-ctrl">
+      <button type="button" class="ks-btn ks-btn-ghost ks-btn-sm" data-guide-prev><i data-lucide="chevron-left"></i>{{ t('guide.back') }}</button>
+      <button type="button" class="ks-btn ks-btn-ghost ks-btn-sm" data-guide-repeat aria-label="{{ t('guide.repeat') }}"><i data-lucide="volume-2"></i>{{ t('guide.repeat') }}</button>
+      <button type="button" class="ks-btn ks-btn-sm" data-guide-next>{{ t('guide.next') }}<i data-lucide="chevron-right"></i></button>
+    </div>
+    <div class="ks-small ks-muted" data-guide-count></div>
+  </div>
+</section>
+<button type="button" class="ks-guide-fab" data-guide-start aria-label="{{ t('guide.start') }}" title="{{ t('guide.start') }}">{{ face(False) }}<span class="ks-guide-fab-label">{{ t('guide.fab') }}</span></button>

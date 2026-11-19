@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% import "partials/_macros.html" as m with context %}
+{% block title %}{{ farm.name }}{% endblock %}
+{% block content %}
+<section class="ks-panel ornate">{{ m.corners() }}
+  <div class="ks-between"><h1 class="ks-title ks-h1 m-0">{{ farm.name }}</h1>{{ m.status_badge(t, farm.status) }}</div>
+  <p class="ks-muted">{{ t('farming.' ~ farm.farming_type) }} · {{ t('public.owner', name=owner.display_name) }} · GSTIN {{ farm.gstin }}</p>
+  {% if farm.description %}<p data-translate>{{ farm.description }}</p>{% endif %}
+  {% if halts %}<div class="ks-alert warn"><i data-lucide="octagon-pause"></i><div>{{ t('public.halted') }}</div></div>{% endif %}
+  <div class="ks-row">{% if shop %}<a class="ks-btn" href="/shop/s/{{ shop.id }}"><i data-lucide="store"></i>{{ t('public.visit_shop') }}</a>{% endif %}
+    {% for j in jobs %}<a class="ks-btn ks-btn-ghost" href="/jobs/{{ j.id }}"><i data-lucide="briefcase"></i>{{ j.title }}</a>{% endfor %}</div>
+</section>
+<div class="ks-grid cols-2 mt-4">
+  <section class="ks-panel">
+    <h2 class="ks-title ks-h3">{{ t('farm.branches') }}</h2>
+    {% for b in branches %}<div class="ks-card mb-2"><strong>{{ b.name }}</strong><div class="ks-small ks-muted">{{ [b.city, b.district, b.state]|select|join(', ') }} · {{ b.work_start.strftime('%H:%M') }}–{{ b.work_end.strftime('%H:%M') }}</div>
+      <div class="ks-row mt-1">{% for c in crops[b.id] %}<span class="ks-chip"><i data-lucide="sprout"></i><span data-translate>{{ c }}</span></span>{% endfor %}</div></div>{% endfor %}
+  </section>
+  <section class="ks-panel">
+    <h2 class="ks-title ks-h3">{{ t('public.policies') }}</h2>
+    <p class="ks-small ks-muted">{{ t('farm.policies_public') }}</p>
+    <ul class="ks-list">{% for p in policies %}<li><strong>{{ t('insurance.' ~ p.policy_type) }}</strong> · {{ p.insurer }} · {{ p.sum_insured|inr }}<div class="ks-small ks-muted">{{ p.valid_from|d }} → {{ p.valid_to|d }}{% if p.upload_id %} · <a href="/media/{{ p.upload_id }}" target="_blank" rel="noopener">{{ t('farm.view_document') }}</a>{% endif %}</div></li>{% else %}<li>{{ t('farm.no_policies') }}</li>{% endfor %}</ul>
+  </section>
+</div>
+<section class="ks-panel ornate mt-4" id="terms">{{ m.corners() }}
+  <h2 class="ks-title ks-h3">{{ t('public.terms', version=farm.terms_version) }}</h2>
+  {% if farm.terms_mode == 'custom' and farm.terms_text %}
+    <div class="whitespace-pre-wrap" data-translate id="terms-text">{{ farm.terms_text }}</div>
+    <p class="ks-small ks-muted mt-2">{{ t('public.terms_reviewed') }}</p>
+  {% else %}
+    <ol>{% for k in boiler_keys %}<li>{{ t(k, pct=cfg.holiday_premium_pct, hours=cfg.max_work_hours, days=cfg.notice_days) }}</li>{% endfor %}</ol>
+  {% endif %}
+  <div class="ks-row">
+    <button type="button" class="ks-btn ks-btn-gold ks-btn-sm" data-terms-explain data-farm="{{ farm.id }}" data-target="#terms-x" data-source="{{ '#terms-text' if farm.terms_mode == 'custom' and farm.terms_text else '#terms' }}"><i data-lucide="sparkles"></i>{{ t('terms.explain_btn') }}</button>
+    <button type="button" class="ks-btn ks-btn-ghost ks-btn-sm" data-speak="#terms"><i data-lucide="volume-2"></i>{{ t('common.listen') }}</button>
+  </div>
+  <div id="terms-x" class="mt-3" aria-live="polite"></div>
+</section>
+{% endblock %}

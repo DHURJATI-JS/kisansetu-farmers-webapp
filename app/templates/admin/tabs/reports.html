@@ -1,0 +1,14 @@
+<p class="ks-muted">{{ t('admin.reports_help', n=surveys_bad) }}</p>
+{% for g, fname, bname, rname, rphone, warns in grievances %}
+<section class="ks-panel mb-3" id="g-{{ g.id }}">
+  <div class="ks-between"><strong>{{ fname }} · {{ bname or '—' }}</strong>{{ m.status_badge(t, g.status) }}</div>
+  <p class="ks-small m-0">{{ t('admin.reporter') }}: <strong>{{ rname }}</strong> · <a href="tel:{{ rphone }}">{{ rphone }}</a> · {{ t('admin.false_warnings', n=warns) }} · {{ t('admin.source.' ~ g.source) }} · {{ g.created_at|dt }}</p>
+  <div class="ks-row my-2">{% for c in g.categories %}<span class="ks-badge danger">{{ t('grievance.' ~ c) }}</span>{% endfor %}</div>
+  {% if g.description %}<p class="whitespace-pre-wrap" data-translate>{{ g.description }}</p>{% endif %}
+  {% if g.admin_note %}<p class="ks-small ks-muted">{{ t('admin.note') }}: {{ g.admin_note }}</p>{% endif %}
+  {% if g.status == 'open' %}<div class="ks-row">
+    <button class="ks-btn ks-btn-sm" data-action="admin.grievance.mark" data-payload='{{ {"grievance_id": g.id|string, "verdict": "valid"}|tojson }}' data-prompt="js.prompt_note" data-prompt-optional>{{ t('verdict.valid') }}</button>
+    <button class="ks-btn ks-btn-danger ks-btn-sm" data-action="admin.grievance.mark" data-payload='{{ {"grievance_id": g.id|string, "verdict": "false"}|tojson }}' data-prompt="js.prompt_note">{{ t('verdict.false') }}</button>
+    <button class="ks-btn ks-btn-ghost ks-btn-sm" data-action="admin.grievance.mark" data-payload='{{ {"grievance_id": g.id|string, "verdict": "resolved"}|tojson }}' data-prompt="js.prompt_note" data-prompt-optional>{{ t('verdict.resolved') }}</button></div>{% endif %}
+</section>
+{% else %}{{ m.empty(t('admin.none'), 'megaphone') }}{% endfor %}

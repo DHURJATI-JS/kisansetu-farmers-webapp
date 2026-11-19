@@ -1,0 +1,27 @@
+{% set role = user.role if user else 'guest' %}
+{% set n_prompts = {'guest': 4, 'farmer': 6, 'owner': 6, 'buyer': 3}.get(role, 0) %}
+<div class="ks-ai-head">
+  <div class="ks-ai-head-title"><i data-lucide="sparkles"></i><strong class="ks-title m-0" title="{{ t('ai.title') }}">{{ t('ai.title') }}</strong></div>
+  <div class="ks-ai-head-tools">
+    <button type="button" class="ks-icon-btn" data-ai-speak aria-label="{{ t('ai.voice_toggle') }}" title="{{ t('ai.voice_toggle') }}"><i data-lucide="volume-2"></i></button>
+    <button type="button" class="ks-icon-btn" data-ai-close aria-label="{{ t('js.close') }}" title="{{ t('js.close') }}"><i data-lucide="x"></i></button>
+  </div>
+</div>
+<p class="ks-small ks-muted m-0 ks-ai-sub">{{ t('ai.subtitle_guest' if role == 'guest' else 'ai.subtitle') }}</p>
+<div class="ks-ai-log" data-ai-log aria-live="polite">
+  <div class="ks-msg bot">{{ t('ai.hello_guest' if role == 'guest' else 'ai.hello', name=(user.full_name.split(' ')[0] if user else '')) }}</div>
+</div>
+<div class="ks-ai-chips mb-2" role="group" aria-label="{{ t('ai.quick') }}">
+  {% for i in range(1, n_prompts + 1) %}<button type="button" class="ks-chip" data-ai-prompt="{{ t('ai.p.' ~ role ~ '.' ~ i) }}">{{ t('ai.p.' ~ role ~ '.' ~ i) }}</button>{% endfor %}
+</div>
+<form class="ks-ai-composer" data-ai-form>
+  <label class="sr-only" for="ai-input-{{ ai_id or 'w' }}">{{ t('ai.placeholder') }}</label>
+  <textarea id="ai-input-{{ ai_id or 'w' }}" class="ks-textarea" rows="2" maxlength="1500" data-ai-input placeholder="{{ t('ai.placeholder') }}"></textarea>
+  <div class="ks-ai-tools" data-camera-scope>
+    <button type="button" class="ks-icon-btn" data-ai-mic aria-label="{{ t('ai.mic') }}" title="{{ t('ai.mic') }}"><i data-lucide="mic"></i></button>
+    {% if user %}<button type="button" class="ks-icon-btn" data-camera data-facing="environment" aria-label="{{ t('camera.live_plant') }}" title="{{ t('camera.live_plant') }}"><i data-lucide="camera"></i></button>
+    <label class="ks-icon-btn" aria-label="{{ t('ai.photo') }}" title="{{ t('ai.photo') }}"><i data-lucide="image"></i><input type="file" accept="image/*" class="sr-only" data-ai-photo></label>{% endif %}
+    <button type="submit" class="ks-btn ks-ai-send"><i data-lucide="send"></i><span>{{ t('ai.send') }}</span></button>
+  </div>
+</form>
+<p class="ks-small ks-muted mt-2 mb-0">{{ t('ai.disclaimer') }}</p>

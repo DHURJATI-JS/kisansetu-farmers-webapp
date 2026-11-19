@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% import "partials/_macros.html" as m with context %}
+{% block title %}{{ farm.name }}{% endblock %}
+{% block head %}<link rel="stylesheet" href="{{ vendor('leaflet/leaflet.css', 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css') }}" crossorigin="anonymous">{% endblock %}
+{% block content %}
+<div class="ks-between mb-2">
+  <div>
+    <h1 class="ks-title ks-h1 m-0">{{ farm.name }}</h1>
+    <p class="ks-muted m-0">{{ t('farming.' ~ farm.farming_type) }} · GSTIN {{ farm.gstin }} · {{ t('role.' ~ role) }}</p>
+  </div>
+  <div class="ks-row">{{ m.status_badge(t, farm.status) }}<a class="ks-btn ks-btn-ghost ks-btn-sm" href="/f/{{ farm.id }}"><i data-lucide="globe"></i>{{ t('farm.public_page') }}</a></div>
+</div>
+{% if farm.status == 'pending_approval' %}<div class="ks-alert warn"><i data-lucide="hourglass"></i><div>{{ t('farm.pending_approval', sla=cfg.approval_sla_hours) }}</div></div>{% endif %}
+{% if farm.status == 'closing' %}<div class="ks-alert warn"><i data-lucide="calendar-x"></i><div>{{ t('farm.closing', date=farm.closure_date|d) }}</div></div>{% endif %}
+{{ m.halt_list(t, halts) }}
+{% if terms_blocked and tab != 'settings' %}<a class="ks-alert danger no-underline text-inherit" href="/farms/{{ farm.id }}?tab=settings" role="alert"><i data-lucide="octagon-alert"></i><div><strong>{{ t('farm.terms_blocked') }}</strong> <span class="ks-small">{{ t('farm.terms_blocked_fix') }}</span></div></a>{% endif %}
+
+<nav class="ks-tabs" aria-label="{{ t('farm.sections') }}">
+  {% for x in tabs %}<a href="?tab={{ x }}" class="{{ 'active' if x == tab }}">{{ t('farm.tab.' ~ x) }}</a>{% endfor %}
+</nav>
+
+{% include "farms/tabs/" ~ tab ~ ".html" %}
+{% endblock %}
+{% block scripts %}
+<script nonce="{{ csp_nonce }}" src="{{ vendor('leaflet/leaflet.js', 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js') }}"></script>
+<script nonce="{{ csp_nonce }}" src="{{ asset('js/map.js') }}"></script>
+<script nonce="{{ csp_nonce }}" src="{{ asset('js/pages/farm.js') }}"></script>
+{% endblock %}

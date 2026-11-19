@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% import "partials/_macros.html" as m with context %}
+{% block title %}{{ t('nav.cart') }}{% endblock %}
+{% block content %}
+<h1 class="ks-title ks-h1">{{ t('nav.cart') }}</h1>
+<div class="ks-alert info"><i data-lucide="banknote"></i><div>{{ t('cart.rules') }}</div></div>
+{% if not user %}<div class="ks-alert warn"><i data-lucide="log-in"></i><div>{{ t('cart.login') }} <a href="/login?next=/cart">{{ t('nav.login') }}</a></div></div>{% endif %}
+<div id="cart-groups" class="ks-stack" data-logged-in="{{ '1' if user else '0' }}"></div>
+<template id="tpl-buyer-farms"><option value="">{{ t('cart.personal') }}</option>{% for f in buyer_farms %}<option value="{{ f.id }}">{{ f.name }}</option>{% endfor %}</template>
+{% endblock %}
+{% block scripts %}<script nonce="{{ csp_nonce }}" src="{{ asset('js/pages/shop.js') }}"></script>{% endblock %}

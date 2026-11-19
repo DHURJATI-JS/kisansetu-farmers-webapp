@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% import "partials/_macros.html" as m with context %}
+{% block title %}{{ t('jobs.title') }}{% endblock %}
+{% block content %}
+<div class="ks-between mb-2"><h1 class="ks-title ks-h1 m-0">{{ t('jobs.title') }}</h1>
+  <button type="button" class="ks-btn ks-btn-ghost ks-btn-sm" data-speak="#jobs-voice"><i data-lucide="volume-2"></i>{{ t('common.listen') }}</button></div>
+<p class="ks-muted" id="jobs-voice">{{ t('jobs.lead') }}</p>
+
+<form id="job-search" class="ks-panel ornate mb-4" role="search">{{ m.corners() }}
+  <div class="ks-grid cols-4">
+    <div class="ks-field m-0 sm:col-span-2"><label class="ks-label" for="js-q">{{ t('jobs.search') }}</label>
+      <div class="flex gap-2"><input id="js-q" name="q" class="ks-input" maxlength="80" placeholder="{{ t('jobs.search_placeholder') }}"><button type="button" class="ks-icon-btn" data-mic="#js-q" aria-label="{{ t('ai.mic') }}"><i data-lucide="mic"></i></button></div></div>
+    <div class="ks-field m-0"><label class="ks-label" for="js-city">{{ t('jobs.city') }}</label>
+      <input id="js-city" name="city" class="ks-input" list="js-cities" maxlength="60"><datalist id="js-cities">{% for c in cities %}<option value="{{ c }}">{% endfor %}</datalist></div>
+    <div class="ks-field m-0"><label class="ks-label" for="js-min">{{ t('jobs.min_salary') }}</label><input id="js-min" name="min_salary" class="ks-input" type="number" min="0" step="10"></div>
+    <div class="ks-field m-0"><label class="ks-label" for="js-sort">{{ t('jobs.sort') }}</label>
+      <select id="js-sort" name="sort" class="ks-select"><option value="distance">{{ t('jobs.sort_distance') }}</option><option value="salary">{{ t('jobs.sort_salary') }}</option><option value="newest">{{ t('jobs.sort_newest') }}</option></select></div>
+    <div class="ks-field m-0"><label class="ks-label" for="js-source">{{ t('jobs.source') }}</label>
+      <select id="js-source" name="source" class="ks-select"><option value="all">{{ t('jobs.source_all') }}</option><option value="internal">{{ t('jobs.source_internal') }}</option><option value="external">{{ t('jobs.source_external') }}</option></select></div>
+  </div>
+  <div class="ks-row mt-3">
+    <button class="ks-btn" type="submit"><i data-lucide="search"></i>{{ t('jobs.search_btn') }}</button>
+    <button class="ks-btn ks-btn-gold" type="button" id="js-near"><i data-lucide="locate-fixed"></i>{{ t('jobs.near_me') }}</button>
+    <span class="ks-small ks-muted" id="js-loc"></span>
+  </div>
+</form>
+
+<section aria-live="polite">
+  <h2 class="ks-title ks-h2" id="js-internal-title">{{ t('jobs.on_platform') }}</h2>
+  <div id="js-internal" class="ks-grid cols-2"></div>
+  <div id="js-external-wrap" class="ks-hidden mt-6">
+    <div class="ks-alert warn"><i data-lucide="external-link"></i><div><strong>{{ t('jobs.external_title') }}</strong><div class="ks-small">{{ t('jobs.external_disclaimer') }}</div></div></div>
+    <div id="js-external" class="ks-grid cols-2"></div>
+    <div id="js-portals" class="mt-4"></div>
+  </div>
+</section>
+{% endblock %}
+{% block scripts %}<script nonce="{{ csp_nonce }}" src="{{ asset('js/pages/jobs.js') }}"></script>{% endblock %}

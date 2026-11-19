@@ -1,0 +1,45 @@
+<section class="ks-grid cols-4 mb-4">
+  {{ m.stat(t('farm.employees'), dues.employees, 'users') }}
+  {{ m.stat(t('dash.due'), dues.due|inr, 'hourglass') }}
+  {{ m.stat(t('dash.overdue'), dues.overdue|inr, 'alarm-clock') }}
+  {{ m.stat(t('farm.branches'), branches|length, 'map-pinned') }}
+</section>
+<div class="ks-grid cols-2">
+  <section class="ks-panel ornate">{{ m.corners() }}
+    <h2 class="ks-title ks-h3">{{ t('farm.insurance_status') }}</h2>
+    <ul class="ks-list">
+      {% for k in ['salary', 'health', 'crop_or_field', 'comprehensive'] %}
+      <li class="ks-between"><span>{{ t('farm.cover.' ~ k) }}</span>{% if insurance[k] %}<span class="ks-badge"><i data-lucide="check"></i>{{ t('common.yes') }}</span>{% else %}<span class="ks-badge {{ 'danger' if k in ('salary','health') else 'warn' }}">{{ t('common.no') }}</span>{% endif %}</li>
+      {% endfor %}
+    </ul>
+    {% for e in insurance.expiring %}<div class="ks-alert warn"><i data-lucide="calendar-clock"></i><div>{{ t('farm.expiring', type=t('insurance.' ~ e.type), date=e.valid_to) }}</div></div>{% endfor %}
+    <a class="ks-btn ks-btn-ghost ks-btn-sm" href="?tab=insurance">{{ t('farm.manage_insurance') }}</a>
+  </section>
+  {% if perms.emergency %}
+  <section class="ks-panel ornate">{{ m.corners() }}
+    <h2 class="ks-title ks-h3 flex items-center gap-2"><i data-lucide="siren"></i>{{ t('farm.emergency_title') }}</h2>
+    <p class="ks-small ks-muted">{{ t('farm.emergency_help') }}</p>
+    <form data-action-form="branch.emergency" data-payload='{{ {"farm_id": farm.id|string, "whole_farm": true}|tojson }}'>
+      {{ m.select('kind', t('field.emergency_kind'), [('earthquake', t('emergency.earthquake')), ('flood', t('emergency.flood')), ('cyclone', t('emergency.cyclone')), ('storm', t('emergency.storm')), ('fire', t('emergency.fire')), ('landslide', t('emergency.landslide')), ('drought', t('emergency.drought')), ('epidemic', t('emergency.epidemic')), ('other', t('emergency.other'))], 'earthquake') }}
+      {{ m.field('note', t('field.note'), optional=True, attrs='maxlength="300"') }}
+      <button class="ks-btn ks-btn-danger" type="submit"><i data-lucide="octagon-pause"></i>{{ t('farm.halt_all') }}</button>
+    </form>
+    {% if halts|selectattr('reason', 'equalto', 'emergency')|list %}
+    <button class="ks-btn mt-3" data-action="branch.resume" data-payload='{{ {"farm_id": farm.id|string}|tojson }}'><i data-lucide="play"></i>{{ t('farm.resume') }}</button>
+    {% endif %}
+  </section>
+  {% endif %}
+</div>
+<section class="ks-panel mt-4">
+  <h2 class="ks-title ks-h3">{{ t('farm.branches') }}</h2>
+  <div class="ks-grid cols-2">
+  {% for b in branches %}
+    <div class="ks-card">
+      <div class="ks-between"><strong>{{ b.name }}{% if b.is_main %} <span class="ks-badge gold">{{ t('farm.main') }}</span>{% endif %}</strong>{{ m.status_badge(t, b.status) }}</div>
+      <div class="ks-small ks-muted">{{ [b.city, b.district, b.state]|select|join(', ') }} · {{ b.work_start.strftime('%H:%M') }}–{{ b.work_end.strftime('%H:%M') }}</div>
+      <div class="ks-row mt-2">{% for c in crops[b.id] %}<span class="ks-chip"><i data-lucide="sprout"></i><span data-translate>{{ c.name }}</span></span>{% endfor %}</div>
+    </div>
+  {% endfor %}
+  </div>
+  {% if proposals_pending %}<a class="ks-alert warn no-underline text-inherit mt-3" href="?tab=proposals"><i data-lucide="vote"></i><div>{{ t('farm.proposals_waiting', n=proposals_pending) }}</div></a>{% endif %}
+</section>

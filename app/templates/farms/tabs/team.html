@@ -1,0 +1,76 @@
+<section class="ks-panel ornate">{{ m.corners() }}
+  <h2 class="ks-title ks-h3">{{ t('farm.team') }}</h2>
+  <div class="ks-table-wrap"><table class="ks-table">
+    <thead><tr><th>{{ t('field.name') }}</th><th>{{ t('field.role') }}</th><th>{{ t('field.branch') }}</th><th>{{ t('field.salary') }}</th><th>{{ t('field.joined') }}</th><th>{{ t('field.status') }}</th><th>{{ t('dash.due') }}</th><th></th></tr></thead>
+    <tbody>
+    {% set bnames = {} %}{% for b in branches %}{% set _ = bnames.update({b.id: b.name}) %}{% endfor %}
+    {% set branch_opts = [('', '—')] %}{% for b in branches if b.status == 'active' %}{% set _ = branch_opts.append((b.id|string, b.name)) %}{% endfor %}
+    {% for r in rows if r.member.status != 'ended' %}
+      {% set mem = r.member %}
+      {% set mine = mem.user_id == user.id %}
+      {% set above = rank.get(role, -1) > rank.get(mem.role, 99) %}
+      <tr>
+        <td class="flex items-center gap-2">{% if r.photo %}<img class="ks-avatar" src="/media/{{ r.photo }}" alt="">{% endif %}<span>{{ r.name }}{% if r.user_status == 'banned' %} <span class="ks-badge danger">{{ t('status.banned') }}</span>{% endif %}<br><a class="ks-small" href="tel:{{ r.phone }}">{{ r.phone }}</a></span></td>
+        <td>{{ t('role.' ~ mem.role) }}{% if mem.status == 'notice' and mem.notice_kind == 'individual' and mem.role != 'employee' %}<div class="ks-badge warn">{{ t('farm.powers_paused') }}</div>{% endif %}</td>
+        <td>{{ bnames.get(mem.branch_id, '—') }}</td>
+        <td>{{ mem.salary_amount|inr }} / {{ t('salary.' ~ mem.salary_type) }}</td>
+        <td>{{ mem.joined_on|d }}</td>
+        <td>{{ m.status_badge(t, mem.status) }}{% if mem.notice_end_date %}<div class="ks-small">{{ t('farm.until', date=mem.notice_end_date|d) }}</div>{% endif %}
+          {% if mem.status == 'notice' %}<div class="ks-small ks-muted">{{ t('farm.notice_kind.' ~ (mem.notice_kind or 'individual')) }}</div>{% endif %}</td>
+        <td><strong>{{ r.money.due|inr }}</strong>{% if r.money.overdue > 0 %}<div class="ks-badge danger">{{ r.money.overdue|inr }}</div>{% endif %}</td>
+        <td class="whitespace-nowrap">
+          {% if perms.salary %}<button class="ks-btn ks-btn-ghost ks-btn-sm" data-salary-member="{{ mem.id }}" data-type="{{ mem.salary_type }}" data-amount="{{ mem.salary_amount }}">{{ t('farm.change_salary') }}</button>{% endif %}
+          {% if not mine and mem.role != 'co_owner' and above %}
+            {% if perms.members and mem.status == 'active' %}<button class="ks-btn ks-btn-danger ks-btn-sm" data-action="member.give_notice" data-payload='{{ {"member_id": mem.id|string}|tojson }}' data-prompt="js.prompt_reason" data-prompt-field="reason" data-guide="give-notice">{{ t('farm.give_notice') }}</button>
+            {% elif perms.members and mem.status == 'notice' and mem.notice_kind == 'individual' and (mem.notice_by_id == user.id or role in ('owner', 'co_owner')) %}<button class="ks-btn ks-btn-sm" data-action="member.cancel_notice" data-payload='{{ {"member_id": mem.id|string}|tojson }}'>{{ t('farm.cancel_notice') }}</button>{% endif %}
+            {% if perms.settings and mem.status == 'active' %}
+            <details class="ks-pop" data-guide="change-role"><summary class="ks-btn ks-btn-ghost ks-btn-sm"><i data-lucide="arrow-up-down"></i>{{ t('farm.change_role') }}</summary>
+              <form class="ks-pop-body" data-action-form="member.change_role" data-payload='{{ {"member_id": mem.id|string, "expected_role": mem.role}|tojson }}'>
+                {% set ropts = [] %}{% for rr in ('manager', 'accountant', 'supervisor', 'employee') if rr != mem.role %}{% set _ = ropts.append((rr, t('role.' ~ rr))) %}{% endfor %}
+                {{ m.select('role', t('field.new_role'), ropts, id='nr-' ~ mem.id) }}
+                {{ m.select('branch_id', t('field.branch'), branch_opts, mem.branch_id|string if mem.branch_id else '', optional=True, id='nb-' ~ mem.id) }}
+                {{ m.field('reason', t('field.reason'), optional=True, attrs='maxlength="300"', id='nx-' ~ mem.id) }}
+                <button class="ks-btn ks-btn-sm" type="submit"><i data-lucide="check"></i>{{ t('farm.change_role_go') }}</button>
+              </form>
+            </details>
+            {% endif %}
+          {% endif %}
+          {% if perms.settings and not mine and mem.role == 'co_owner' %}<button class="ks-btn ks-btn-danger ks-btn-sm" data-action="coowner.remove" data-payload='{{ {"member_id": mem.id|string}|tojson }}' data-prompt="js.prompt_reason" data-prompt-field="reason">{{ t('farm.remove_coowner') }}</button>{% endif %}
+        </td>
+      </tr>
+    {% else %}<tr><td colspan="8">{{ m.empty(t('farm.no_team'), 'users') }}</td></tr>{% endfor %}
+    </tbody>
+  </table></div>
+  <p class="ks-small ks-muted">{{ t('farm.notice_rule', days=cfg.notice_days) }}</p>
+  <p class="ks-small ks-muted">{{ t('farm.rank_rule') }}</p>
+</section>
+
+{% if perms.salary %}
+<div class="ks-grid cols-2 mt-4">
+  <section class="ks-panel ornate">{{ m.corners() }}
+    <h2 class="ks-title ks-h3">{{ t('farm.invite') }}</h2>
+    <form data-action-form="member.invite" data-payload='{{ {"farm_id": farm.id|string}|tojson }}'>
+      {{ m.field('phone', t('field.phone'), type='tel', required=True, attrs='maxlength="16" inputmode="tel"') }}
+      {{ m.select('role', t('field.role'), [('employee', t('role.employee')), ('supervisor', t('role.supervisor')), ('manager', t('role.manager')), ('accountant', t('role.accountant'))], 'employee') }}
+      {{ m.select('branch_id', t('field.branch'), branch_opts, '', optional=True) }}
+      <div class="ks-grid cols-2">
+        {{ m.select('salary_type', t('field.salary_type'), [('daily', t('salary.daily')), ('monthly', t('salary.monthly'))], 'daily') }}
+        {{ m.field('salary_amount', t('field.salary_amount'), type='number', dtype='number', required=True, attrs='min="1" step="0.01"') }}
+      </div>
+      <button class="ks-btn" type="submit"><i data-lucide="send"></i>{{ t('farm.send_invite') }}</button>
+    </form>
+  </section>
+  <section class="ks-panel ornate">{{ m.corners() }}
+    <h2 class="ks-title ks-h3">{{ t('farm.add_coowner') }}</h2>
+    <p class="ks-small ks-muted">{{ t('farm.coowner_help') }}</p>
+    <form data-action-form="coowner.add" data-payload='{{ {"farm_id": farm.id|string}|tojson }}'>
+      {{ m.field('phone', t('field.phone'), type='tel', required=True, attrs='maxlength="16" inputmode="tel"', id='co-phone') }}
+      <button class="ks-btn ks-btn-gold" type="submit"><i data-lucide="user-plus"></i>{{ t('farm.propose_coowner') }}</button>
+    </form>
+    {% if invitations %}
+    <h3 class="ks-h3 mt-4">{{ t('farm.pending_invites') }}</h3>
+    <ul class="ks-list">{% for i in invitations %}<li class="ks-between"><span>{{ i.phone }} · {{ t('role.' ~ i.role) }}</span><span class="ks-small ks-muted">{{ i.expires_at|dt }}</span></li>{% endfor %}</ul>
+    {% endif %}
+  </section>
+</div>
+{% endif %}

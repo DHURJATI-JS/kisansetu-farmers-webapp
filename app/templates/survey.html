@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% import "partials/_macros.html" as m with context %}
+{% block title %}{{ t('survey.title') }}{% endblock %}
+{% block content %}
+<section class="ks-panel ornate max-w-xl mx-auto mt-4">{{ m.corners() }}
+  {% if not survey %}
+    {{ m.empty(t('survey.none'), 'heart-handshake') }}
+  {% else %}
+  <div id="survey" data-id="{{ survey.id }}">
+    <div class="ks-between"><h1 class="ks-title ks-h2 m-0">{{ t('survey.title') }}</h1>
+      <button type="button" class="ks-btn ks-btn-ghost ks-btn-sm" data-speak="#sv-q0"><i data-lucide="volume-2"></i>{{ t('common.listen') }}</button></div>
+    <p class="ks-muted">{{ farm.name if farm else '' }} · {{ survey.survey_date|d }}</p>
+    <p class="text-xl" id="sv-q0">{{ t('survey.q_day') }}</p>
+    <div class="ks-grid cols-2" role="group">
+      <button type="button" class="ks-tile" data-rating="good"><i data-lucide="smile"></i>{{ t('survey.good') }}</button>
+      <button type="button" class="ks-tile" data-rating="bad"><i data-lucide="frown"></i>{{ t('survey.bad') }}</button>
+    </div>
+    <div id="sv-more" class="ks-hidden mt-4">
+      <p class="ks-muted">{{ t('survey.more') }}</p>
+      {% for q in ['water', 'food', 'breaks', 'rest', 'overworked', 'respect', 'paid_fairly', 'safe', 'worked_today'] %}
+      <div class="ks-card mb-2" data-question="{{ q }}">
+        <div class="ks-between"><strong id="sv-{{ q }}">{{ t('survey.q.' ~ q) }}</strong><button type="button" class="ks-icon-btn" data-speak="#sv-{{ q }}" aria-label="{{ t('common.listen') }}"><i data-lucide="volume-2"></i></button></div>
+        <div class="ks-row mt-2"><button type="button" class="ks-btn ks-btn-ghost" data-answer="true"><i data-lucide="thumbs-up"></i>{{ t('common.yes') }}</button>
+          <button type="button" class="ks-btn ks-btn-ghost" data-answer="false"><i data-lucide="thumbs-down"></i>{{ t('common.no') }}</button></div>
+      </div>
+      {% endfor %}
+      <div class="ks-field"><label class="ks-label" for="sv-comment">{{ t('survey.comment') }}</label>
+        <div class="flex gap-2"><textarea id="sv-comment" class="ks-textarea" maxlength="1000"></textarea><button type="button" class="ks-icon-btn" data-mic="#sv-comment" aria-label="{{ t('ai.mic') }}"><i data-lucide="mic"></i></button></div></div>
+      <div class="ks-alert info"><i data-lucide="shield-check"></i><div class="ks-small">{{ t('survey.privacy') }}</div></div>
+      <button type="button" class="ks-btn ks-btn-go ks-btn-xl w-full" id="sv-submit"><i data-lucide="send"></i>{{ t('survey.submit') }}</button>
+    </div>
+  </div>
+  {% endif %}
+</section>
+{% endblock %}
+{% block scripts %}<script nonce="{{ csp_nonce }}" src="{{ asset('js/pages/misc.js') }}"></script>{% endblock %}

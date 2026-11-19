@@ -1,0 +1,5 @@
+/* Tailwind v4 input — built & minified by scripts/build_assets.py (pytailwindcss). */
+@import "tailwindcss";
+@source "../../templates";
+@source "../js";
+@custom-variant dark (&:where(.dark, .dark *));

@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% import "partials/_macros.html" as m with context %}
+{% block title %}{{ t('nav.report') }}{% endblock %}
+{% block content %}
+<section class="ks-panel ornate max-w-xl mx-auto mt-4">{{ m.corners() }}
+  <div class="ks-between"><h1 class="ks-title ks-h2 m-0">{{ t('report.title') }}</h1>
+    <button type="button" class="ks-btn ks-btn-ghost ks-btn-sm" data-speak="#rp-voice"><i data-lucide="volume-2"></i>{{ t('common.listen') }}</button></div>
+  <p class="ks-muted" id="rp-voice">{{ t('report.lead') }}</p>
+  {% if not can_report %}<div class="ks-alert warn">{{ t('report.workers_only') }}</div>{% else %}
+  <form data-action-form="grievance.report">
+    <fieldset class="ks-field"><legend class="ks-label">{{ t('report.what') }}</legend>
+      <div class="grid grid-cols-2 gap-2">{% for c in categories %}<label class="ks-chip"><input type="checkbox" name="categories" value="{{ c }}" data-type="list-check">{{ t('grievance.' ~ c) }}</label>{% endfor %}</div></fieldset>
+    <div class="ks-field"><label class="ks-label" for="rp-desc">{{ t('report.describe') }}</label>
+      <div class="flex gap-2"><textarea id="rp-desc" name="description" class="ks-textarea" maxlength="2000" data-optional></textarea><button type="button" class="ks-icon-btn" data-mic="#rp-desc" aria-label="{{ t('ai.mic') }}"><i data-lucide="mic"></i></button></div></div>
+    <div class="ks-alert info"><i data-lucide="shield-check"></i><div class="ks-small">{{ t('survey.privacy') }}</div></div>
+    <button class="ks-btn ks-btn-go ks-btn-xl w-full" type="submit"><i data-lucide="megaphone"></i>{{ t('report.send') }}</button>
+  </form>
+  {% endif %}
+  <p class="ks-small mt-4">{{ t('report.emergency', phone=HELPLINES.emergency) }}</p>
+</section>
+{% endblock %}

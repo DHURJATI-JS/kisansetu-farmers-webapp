@@ -1,0 +1,52 @@
+{% import "partials/_macros.html" as m with context %}
+{# A credit / debit statement (app/services/statements.py). `path` + `params` (the page's own query, e.g. {"of": "me"} or
+   {"tab": "ledger"}) — the month and page are added to them. #}
+{% macro statement_view(st, path, params, csv=None, show_by=False) %}
+{% set base = path ~ '?' ~ (params|urlencode) %}
+<div class="ks-grid kpi-grid">
+  {{ m.stat(t('stmt.opening'), st.opening|inr, 'wallet') }}
+  {{ m.stat(t('stmt.credits'), st.credits|inr, 'arrow-down-left') }}
+  {{ m.stat(t('stmt.debits'), st.debits|inr, 'arrow-up-right') }}
+  {{ m.stat(t('stmt.closing'), st.closing|inr, 'scale') }}
+  {% if st.info %}{{ m.stat(t('stmt.info'), st.info|inr, 'landmark') }}{% endif %}
+</div>
+<div class="ks-row items-end mt-3">
+  {% if st.prev_month %}<a class="ks-btn ks-btn-ghost ks-btn-sm" href="{{ base }}&month={{ st.prev_month }}"><i data-lucide="chevron-left"></i>{{ t('stmt.prev') }}</a>{% endif %}
+  <form class="ks-row items-end" method="get" action="{{ path }}">
+    {% for k, v in params.items() %}<input type="hidden" name="{{ k }}" value="{{ v }}">{% endfor %}
+    <div class="ks-field m-0"><label class="ks-label" for="stmt-month">{{ t('stmt.month') }}</label>
+      <input class="ks-input" type="month" id="stmt-month" name="month" value="{{ st.month if st.month != 'all' else '' }}" max="{{ st.end.strftime('%Y-%m') if st.month == 'all' else '' }}"></div>
+    <button class="ks-btn ks-btn-sm" type="submit"><i data-lucide="calendar-search"></i>{{ t('stmt.show') }}</button>
+  </form>
+  {% if st.next_month %}<a class="ks-btn ks-btn-ghost ks-btn-sm" href="{{ base }}&month={{ st.next_month }}">{{ t('stmt.next') }}<i data-lucide="chevron-right"></i></a>{% endif %}
+  {% if st.month != 'all' %}<a class="ks-btn ks-btn-ghost ks-btn-sm" href="{{ base }}&month=all">{{ t('stmt.all') }}</a>{% endif %}
+  {% if csv %}<a class="ks-btn ks-btn-ghost ks-btn-sm" href="{{ csv }}"><i data-lucide="download"></i>{{ t('stmt.csv') }}</a>{% endif %}
+</div>
+<p class="ks-small ks-muted mt-2">{{ t('stmt.period_all') if st.month == 'all' else t('stmt.period', start=st.start|d, end=st.end|d) }} · {{ t('stmt.balance_note') }}</p>
+<div class="ks-table-wrap"><table class="ks-table tnum">
+  <thead><tr><th>{{ t('stmt.col.date') }}</th><th>{{ t('stmt.col.details') }}</th><th class="text-right">{{ t('stmt.col.credit') }}</th>
+    <th class="text-right">{{ t('stmt.col.debit') }}</th><th class="text-right">{{ t('stmt.col.balance') }}</th></tr></thead>
+  <tbody>
+  {% if st.page == 1 %}<tr><td class="whitespace-nowrap">{{ st.start|d if st.month != 'all' else '' }}</td><td class="ks-muted">{{ t('stmt.opening') }}</td><td></td><td></td><td class="text-right">{{ st.opening|inr }}</td></tr>{% endif %}
+  {% for e in st.rows %}<tr>
+    <td class="whitespace-nowrap">{{ e.day|d }}</td>
+    <td><span class="ks-badge {{ 'danger' if e.direction == 'out' else ('info' if e.direction == 'info' else '') }}">{{ t('ledger.' ~ e.type) }}</span>
+      <span data-translate>{{ e.description }}</span>
+      {% if e.who %}<div class="ks-small ks-muted">{{ e.who }}</div>{% endif %}
+      {% if show_by and e.by %}<div class="ks-small ks-muted">{{ t('stmt.by', name=e.by) }}</div>{% endif %}
+      {% if e.upload_id %}<a class="ks-small" href="/media/{{ e.upload_id }}" target="_blank" rel="noopener">{{ t('farm.receipt') }}</a>{% endif %}
+      {% if e.direction == 'info' %}<div class="ks-small ks-muted">{{ t('stmt.info_line', amount=e.amount|inr) }}</div>{% endif %}</td>
+    <td class="text-right">{{ e.credit|inr if e.credit is not none else '' }}</td>
+    <td class="text-right">{{ e.debit|inr if e.debit is not none else '' }}</td>
+    <td class="text-right">{{ e.balance|inr }}</td></tr>
+  {% else %}<tr><td colspan="5">{{ m.empty(t('stmt.empty'), 'book-open') }}</td></tr>{% endfor %}
+  {% if st.page == st.pages %}<tr><td class="whitespace-nowrap">{{ st.end|d }}</td><td><strong>{{ t('stmt.closing') }}</strong></td>
+    <td class="text-right"><strong>{{ st.credits|inr }}</strong></td><td class="text-right"><strong>{{ st.debits|inr }}</strong></td>
+    <td class="text-right"><strong>{{ st.closing|inr }}</strong></td></tr>{% endif %}
+  </tbody></table></div>
+{% if st.pages > 1 %}<div class="ks-row mt-2">
+  {% if st.page > 1 %}<a class="ks-btn ks-btn-ghost ks-btn-sm" href="{{ base }}&month={{ st.month }}&page={{ st.page - 1 }}"><i data-lucide="chevron-left"></i>{{ t('stmt.earlier') }}</a>{% endif %}
+  <span class="ks-small ks-muted">{{ t('stmt.page', n=st.page, total=st.pages) }}</span>
+  {% if st.page < st.pages %}<a class="ks-btn ks-btn-ghost ks-btn-sm" href="{{ base }}&month={{ st.month }}&page={{ st.page + 1 }}">{{ t('stmt.later') }}<i data-lucide="chevron-right"></i></a>{% endif %}
+</div>{% endif %}
+{% endmacro %}

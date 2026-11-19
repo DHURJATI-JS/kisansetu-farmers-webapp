@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% import "partials/_macros.html" as m with context %}
+{% block title %}{{ t('payment.title') }}{% endblock %}
+{% block content %}
+<section class="ks-panel ornate max-w-2xl mx-auto">{{ m.corners() }}
+  <h1 class="ks-title ks-h2">{{ t('payment.title') }}</h1>
+  <div class="ks-grid cols-2">
+    {{ m.stat(t('field.amount'), pay.amount|inr, 'badge-indian-rupee') }}
+    {{ m.stat(t('payment.method'), t('pay.' ~ pay.method), 'wallet') }}
+  </div>
+  <ul class="ks-list mt-3">
+    <li>{{ t('payment.farm') }}: <strong>{{ farm.name }}</strong></li>
+    <li>{{ t('payment.employee') }}: {{ pay.employee_name }}</li>
+    <li>{{ t('payment.recorded') }}: {{ pay.created_at|dt }} · {{ t('farm.by', name=pay.recorded_by_name) }}</li>
+    {% if pay.upi_ref %}<li>{{ t('payment.ref') }}: <code>{{ pay.upi_ref }}</code></li>{% endif %}
+    {% if pay.tds_portion > 0 %}<li>{{ t('payment.tds', amount=pay.tds_portion|inr) }}</li>{% endif %}
+    <li class="ks-small ks-muted">{{ t('payment.ocr_note', engines=((pay.ocr or {}).get('agreeing') or [])|join(', '), conf=((pay.confidence or 0) * 100)|round|int) }}</li>
+  </ul>
+  {% if contact %}<div class="ks-alert info mt-3"><i data-lucide="phone"></i><div>{{ t('payment.contact', name=contact.name) }}
+    <a href="tel:{{ contact.phone }}">{{ contact.phone }}</a> · <a href="https://wa.me/{{ contact.phone|replace('+', '') }}" target="_blank" rel="noopener noreferrer">{{ t('dash.whatsapp') }}</a></div></div>{% endif %}
+  <h2 class="ks-title ks-h3 mt-4">{{ t('payment.proof') }}</h2>
+  <img class="rounded-xl border w-full" src="/media/{{ pay.upload_id }}" alt="{{ t('payment.proof') }}">
+</section>
+{% endblock %}

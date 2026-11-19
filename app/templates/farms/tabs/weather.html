@@ -1,0 +1,26 @@
+<div class="ks-between mb-3">
+  <p class="ks-muted m-0">{{ t('farm.weather_help') }}</p>
+  {% if perms.crops %}<button class="ks-btn ks-btn-gold" data-action="weather.scan" data-payload='{{ {"farm_id": farm.id|string}|tojson }}'><i data-lucide="radar"></i>{{ t('farm.scan_now') }}</button>{% endif %}
+</div>
+{% set bmap = {} %}{% for b in branches %}{% set _ = bmap.update({b.id: b}) %}{% endfor %}
+{% for r in reports %}
+{% set b = bmap.get(r.branch_id) %}
+<section class="ks-panel ornate mb-4">{{ m.corners() }}
+  <div class="ks-between"><h2 class="ks-title ks-h3 m-0">{{ b.name if b else '' }}</h2><span class="ks-small ks-muted">{{ r.report_date|d }}</span></div>
+  {% if r.insurance_status == 'missing_salary_cover' %}<div class="ks-alert danger"><i data-lucide="shield-alert"></i><div>{{ t('farm.need_salary_cover') }}</div></div>
+  {% elif r.insurance_status == 'suggest_field_cover' %}<div class="ks-alert warn"><i data-lucide="shield-plus"></i><div>{{ t('farm.suggest_field_cover') }}</div></div>{% endif %}
+  {% if r.advisory %}<div class="ks-alert info"><i data-lucide="sparkles"></i><div data-translate>{{ r.advisory }}</div></div>{% endif %}
+  {% if r.forecast and r.forecast.daily %}
+  <div class="ks-table-wrap"><table class="ks-table">
+    <thead><tr><th>{{ t('field.date') }}</th><th>°C</th><th>{{ t('farm.rain') }}</th><th>{{ t('farm.wind') }}</th></tr></thead>
+    <tbody>{% for d in r.forecast.daily %}<tr><td>{{ d.date }}</td><td>{{ d.tmin }} – {{ d.tmax }}</td><td>{{ d.rain }} mm</td><td>{{ d.wind }} km/h</td></tr>{% endfor %}</tbody>
+  </table></div>
+  {% endif %}
+  {% for a in r.alerts or [] %}<div class="ks-alert {{ 'danger' if a.severity in ('severe','extreme') else 'warn' }}"><i data-lucide="cloud-lightning"></i><div>{{ t('weather.kind.' ~ a.kind, value=a.value, date=a.date, branch=(b.name if b else '')) }}</div></div>{% endfor %}
+  {% for c in r.calamities or [] %}<div class="ks-alert danger"><i data-lucide="triangle-alert"></i><div><strong>{{ t('calamity.' ~ c.kind) }}</strong> · {{ c.title }} · {{ t('farm.km_away', km=c.distance_km) }}{% if c.url %} · <a href="{{ c.url }}" target="_blank" rel="noopener noreferrer">{{ t('common.source') }}</a>{% endif %}</div></div>{% endfor %}
+  {% for w in r.crop_warnings or [] %}<div class="ks-alert warn"><i data-lucide="sprout"></i><div>{{ t('crop.warn.' ~ w.kind, crop=w.crop, value=w.value, limit=w.limit, date=w.date) }}</div></div>{% endfor %}
+  {% if r.recommendations %}<h3 class="ks-h3 mt-3">{{ t('farm.recommended_crops') }}</h3>
+  <div class="ks-row">{% for c in r.recommendations %}<span class="ks-chip" title="{% for f in c.farming_types %}{{ t('farming.' ~ f) }} {% endfor %}"><i data-lucide="sprout"></i>{{ c.name }}</span>{% endfor %}</div>{% endif %}
+</section>
+{% else %}{{ m.empty(t('farm.no_reports'), 'cloud-sun') }}{% endfor %}
+<p class="ks-small ks-muted">{{ t('farm.weather_sources') }}</p>

@@ -1,0 +1,7 @@
+<section class="ks-panel ornate">{{ m.corners() }}
+<div class="ks-table-wrap"><table class="ks-table">
+  <thead><tr><th>{{ t('admin.when') }}</th><th>{{ t('admin.actor') }}</th><th>{{ t('admin.action') }}</th><th>{{ t('admin.target') }}</th><th>IP</th></tr></thead>
+  <tbody>{% for log, actor in logs %}<tr><td class="ks-small">{{ log.created_at|dt }}</td><td>{{ actor or '—' }}</td><td><code>{{ log.action }}</code></td>
+    <td class="ks-small">{{ log.target_type or '' }} {{ (log.target_id or '')[:8] }}</td><td class="ks-small">{{ log.ip or '' }}</td></tr>{% endfor %}</tbody>
+</table></div>
+</section>

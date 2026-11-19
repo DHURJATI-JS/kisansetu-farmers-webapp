@@ -1,0 +1,76 @@
+{% macro corners() %}<span class="ks-corner tl" aria-hidden="true"></span><span class="ks-corner tr" aria-hidden="true"></span><span class="ks-corner bl" aria-hidden="true"></span><span class="ks-corner br" aria-hidden="true"></span>{% endmacro %}
+
+{% macro panel_head(title, icon='leaf', sub=None, speak=False) %}
+<div class="ks-between mb-3">
+  <div class="flex items-center gap-3">
+    <span class="ks-icon-btn" aria-hidden="true"><i data-lucide="{{ icon }}"></i></span>
+    <div><h2 class="ks-title ks-h2 m-0">{{ title }}</h2>{% if sub %}<p class="ks-muted ks-small m-0">{{ sub }}</p>{% endif %}</div>
+  </div>
+  {% if speak %}<button type="button" class="ks-btn ks-btn-ghost ks-btn-sm ks-speak" data-text="{{ title }}. {{ sub or '' }}"><i data-lucide="volume-2"></i>{{ caller() if caller else '' }}</button>{% endif %}
+</div>
+{% endmacro %}
+
+{% macro field(name, label, type='text', value='', required=False, help=None, attrs='', dtype='', placeholder='', id=None, optional=False) %}
+<div class="ks-field">
+  <label class="ks-label" for="{{ id or ('f-' ~ name|replace('.', '-')) }}">{{ label }}{% if required %} <span class="text-red-500" aria-hidden="true">*</span>{% endif %}</label>
+  {% if type == 'textarea' %}
+  <textarea class="ks-textarea" id="{{ id or ('f-' ~ name|replace('.', '-')) }}" name="{{ name }}" {% if required %}required{% endif %} {% if dtype %}data-type="{{ dtype }}"{% endif %} {% if optional %}data-optional{% endif %} placeholder="{{ placeholder }}" {{ attrs|safe }}>{{ value or '' }}</textarea>
+  {% else %}
+  <input class="ks-input" id="{{ id or ('f-' ~ name|replace('.', '-')) }}" name="{{ name }}" type="{{ type }}" value="{{ value if value is not none else '' }}" {% if required %}required{% endif %} {% if dtype %}data-type="{{ dtype }}"{% endif %} {% if optional %}data-optional{% endif %} placeholder="{{ placeholder }}" {{ attrs|safe }}>
+  {% endif %}
+  {% if help %}<span class="ks-help">{{ help }}</span>{% endif %}
+</div>
+{% endmacro %}
+
+{% macro select(name, label, options, value=None, required=False, help=None, dtype='', optional=False, id=None) %}
+<div class="ks-field">
+  <label class="ks-label" for="{{ id or ('f-' ~ name|replace('.', '-')) }}">{{ label }}</label>
+  <select class="ks-select" id="{{ id or ('f-' ~ name|replace('.', '-')) }}" name="{{ name }}" {% if required %}required{% endif %} {% if dtype %}data-type="{{ dtype }}"{% endif %} {% if optional %}data-optional{% endif %}>
+    {% for v, l in options %}<option value="{{ v }}" {% if value is not none and v|string == value|string %}selected{% endif %}>{{ l }}</option>{% endfor %}
+  </select>
+  {% if help %}<span class="ks-help">{{ help }}</span>{% endif %}
+</div>
+{% endmacro %}
+
+{% macro stat(label, value, icon='sprout') %}
+<div class="ks-stat ks-reveal"><div class="flex items-center gap-2 ks-muted"><i data-lucide="{{ icon }}"></i><span class="l">{{ label }}</span></div><div class="v">{{ value }}</div></div>
+{% endmacro %}
+
+{% macro empty(text, icon='sprout') %}
+<div class="ks-empty"><i data-lucide="{{ icon }}"></i><p>{{ text }}</p></div>
+{% endmacro %}
+
+{% macro status_badge(t, status) %}
+{% set cls = {'active':'', 'open':'', 'verified':'', 'accepted':'', 'executed':'', 'delivered':'', 'picked_up':'', 'answered':'', 'approved':'', 'valid':'',
+  'pending_approval':'warn', 'pending':'warn', 'notice':'warn', 'closing':'warn', 'placed':'info', 'confirmed':'info', 'dispatched':'info', 'ready_for_pickup':'info', 'applied':'info', 'pending_owner':'warn',
+  'banned':'danger', 'rejected':'danger', 'closed':'danger', 'ended':'danger', 'cancelled':'danger', 'expired':'danger', 'failed':'danger', 'false':'danger', 'deleted':'danger'} %}
+<span class="ks-badge {{ cls.get(status, 'info') }}">{{ t('status.' ~ status) }}</span>
+{% endmacro %}
+
+{% macro halt_list(t, halts) %}
+{% for h in halts %}
+<div class="ks-alert danger" role="alert"><i data-lucide="octagon-alert"></i><div><strong>{{ t('halt.reason.' ~ h.reason) }}</strong><div class="ks-small">{{ t(h.message_key, **(h.params or {})) }}</div><div class="ks-small ks-muted">{{ h.created_at|dt }}</div></div></div>
+{% endfor %}
+{% endmacro %}
+
+{# Typed location (no GPS, or a wrong fix): state from the list, district, village / town, optional PIN code.
+   Hidden until [data-loc-typed-toggle] (or a failed GPS attempt) reveals it; core.js reads it with KS.typedAddress(). #}
+{% macro typed_location(id) %}
+<div class="ks-card mt-3 ks-hidden" id="{{ id }}" data-typed-location>
+  <h3 class="ks-h3 flex items-center gap-2 m-0"><i data-lucide="keyboard"></i>{{ t('loc.typed_title') }}</h3>
+  <p class="ks-small ks-muted">{{ t('loc.typed_help') }}</p>
+  <div class="ks-grid cols-2">
+    <div class="ks-field">
+      <label class="ks-label" for="{{ id }}-state">{{ t('field.state') }}</label>
+      <select class="ks-select" id="{{ id }}-state" data-loc="state" autocomplete="address-level1">
+        <option value="">{{ t('loc.pick_state') }}</option>
+        {% for s in INDIA_STATES %}<option value="{{ s }}">{{ t('state.' ~ s|lower|replace(' ', '_')) }}</option>{% endfor %}
+      </select>
+    </div>
+    {{ field('district', t('field.district'), id=id ~ '-district', attrs='data-loc="district" maxlength="96" autocomplete="address-level2"') }}
+    {{ field('place', t('field.village_town'), id=id ~ '-place', attrs='data-loc="place" maxlength="96" autocomplete="address-level3"') }}
+    {{ field('pincode', t('field.pincode'), id=id ~ '-pin', optional=True, help=t('help.pincode'), attrs='data-loc="pincode" inputmode="numeric" maxlength="6" pattern="[1-9][0-9]{5}" autocomplete="postal-code"') }}
+  </div>
+  <button type="button" class="ks-btn ks-btn-gold" data-loc-find><i data-lucide="search"></i>{{ t('loc.find') }}</button>
+</div>
+{% endmacro %}

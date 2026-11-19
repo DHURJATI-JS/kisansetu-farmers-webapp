@@ -1,0 +1,44 @@
+<div class="ks-grid cols-2">
+<section class="ks-panel ornate">{{ m.corners() }}
+  <h2 class="ks-title ks-h3">{{ t('farm.applications') }}</h2>
+  {% for a, name, photo, phone, dob, title in applications %}
+  <div class="ks-card mb-2">
+    <div class="flex items-center gap-3">
+      {% if photo %}<img class="ks-avatar" src="/media/{{ photo }}" alt="">{% endif %}
+      <div class="flex-1"><strong>{{ name }}</strong> · {{ title }}<div class="ks-small ks-muted">{{ t('farm.distance', km=a.distance_km) }}{% if a.location_source == 'typed' %} <span class="ks-badge info">{{ t('farm.loc_typed') }}</span>{% elif a.location_source == 'gps' %} <span class="ks-badge">{{ t('farm.loc_saved') }}</span>{% endif %} · <a href="tel:{{ phone }}">{{ phone }}</a> · {{ a.created_at|dt }}</div>
+        {% if a.note %}<div class="ks-small" data-translate>{{ a.note }}</div>{% endif %}</div>
+    </div>
+    <div class="ks-row mt-2">
+      <button class="ks-btn ks-btn-sm" data-action="application.decide" data-payload='{{ {"application_id": a.id|string, "decision": "accept"}|tojson }}'><i data-lucide="check"></i>{{ t('common.accept') }}</button>
+      <button class="ks-btn ks-btn-ghost ks-btn-sm" data-action="application.decide" data-payload='{{ {"application_id": a.id|string, "decision": "reject"}|tojson }}'>{{ t('common.reject') }}</button>
+    </div>
+  </div>
+  {% else %}{{ m.empty(t('farm.no_applications'), 'inbox') }}{% endfor %}
+</section>
+
+<section class="ks-panel ornate">{{ m.corners() }}
+  <h2 class="ks-title ks-h3">{{ t('farm.postings') }}</h2>
+  <ul class="ks-list">
+  {% for j in postings %}
+    <li class="ks-between"><span><a href="/jobs/{{ j.id }}">{{ j.title }}</a> · {{ j.salary_amount|inr }}/{{ t('salary.' ~ j.salary_type) }} · {{ t('farm.positions', n=j.positions) }}</span>
+      <span>{{ m.status_badge(t, j.status) }}{% if j.status == 'open' %} <button class="ks-btn ks-btn-ghost ks-btn-sm" data-action="job.close" data-payload='{{ {"job_id": j.id|string}|tojson }}'>{{ t('common.close') }}</button>{% endif %}</span></li>
+  {% else %}<li>{{ t('farm.no_postings') }}</li>{% endfor %}
+  </ul>
+  {% if perms.settings and farm.status == 'active' %}
+  <h3 class="ks-h3 mt-4">{{ t('farm.new_posting') }}</h3>
+  <form data-action-form="job.create" data-payload='{{ {"farm_id": farm.id|string}|tojson }}'>
+    {{ m.field('title', t('field.job_title'), required=True, attrs='maxlength="120"', value=t('farm.default_job_title')) }}
+    {% set bopts = [] %}{% for b in branches if b.status == 'active' %}{% set _ = bopts.append((b.id|string, b.name)) %}{% endfor %}
+    {{ m.select('branch_id', t('field.branch'), bopts, required=True) }}
+    <div class="ks-grid cols-2">
+      {{ m.select('role', t('field.role'), [('employee', t('role.employee')), ('supervisor', t('role.supervisor'))], 'employee') }}
+      {{ m.field('positions', t('field.positions'), type='number', dtype='int', value=1, required=True, attrs='min="1" max="500"') }}
+      {{ m.select('salary_type', t('field.salary_type'), [('daily', t('salary.daily')), ('monthly', t('salary.monthly'))], 'daily') }}
+      {{ m.field('salary_amount', t('field.salary_amount'), type='number', dtype='number', required=True, attrs='min="1" step="0.01"', help=t('help.min_wage', floor=cfg.national_floor_wage)) }}
+    </div>
+    {{ m.field('description', t('field.description'), type='textarea', optional=True, attrs='maxlength="2000"') }}
+    <button class="ks-btn ks-btn-gold" type="submit"><i data-lucide="megaphone"></i>{{ t('farm.post_job') }}</button>
+  </form>
+  {% endif %}
+</section>
+</div>

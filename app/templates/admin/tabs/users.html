@@ -1,0 +1,15 @@
+<section class="ks-panel ornate">{{ m.corners() }}
+<div class="ks-table-wrap"><table class="ks-table">
+  <thead><tr><th>{{ t('field.name') }}</th><th>{{ t('field.role') }}</th><th>{{ t('field.status') }}</th><th>{{ t('admin.warnings') }}</th><th>{{ t('admin.joined') }}</th><th></th></tr></thead>
+  <tbody>{% for u in users %}<tr>
+    <td class="flex items-center gap-2">{% if u.photo_path %}<img class="ks-avatar" src="/media/{{ u.photo_path }}" alt="">{% endif %}<span>{{ u.display_name }}<div class="ks-small"><a href="tel:{{ u.phone }}">{{ u.phone }}</a> {{ u.email or '' }}</div></span></td>
+    <td>{{ t('role.' ~ u.role) }}</td><td>{{ m.status_badge(t, u.status) }}{% if u.ban_reason %}<div class="ks-small ks-muted">{{ u.ban_reason }}</div>{% endif %}</td>
+    <td>{{ u.false_report_warnings }}</td><td>{{ u.created_at|d }}<div class="ks-small ks-muted">{{ u.last_login_at|dt }}</div></td>
+    <td class="whitespace-nowrap">{% if u.role != 'superadmin' %}
+      {% if u.status == 'active' %}<button class="ks-btn ks-btn-danger ks-btn-sm" data-action="admin.user.ban" data-payload='{{ {"user_id": u.id|string}|tojson }}' data-prompt="js.prompt_reason" data-prompt-field="reason">{{ t('admin.ban') }}</button>
+      {% elif u.status == 'banned' %}<button class="ks-btn ks-btn-sm" data-action="admin.user.unban" data-payload='{{ {"user_id": u.id|string}|tojson }}' data-prompt="js.prompt_note">{{ t('admin.unban') }}</button>{% endif %}
+      {% if u.status != 'deleted' %}<button class="ks-btn ks-btn-ghost ks-btn-sm" data-action="admin.user.delete" data-payload='{{ {"user_id": u.id|string}|tojson }}' data-prompt="js.prompt_reason" data-prompt-field="reason">{{ t('common.delete') }}</button>{% endif %}
+    {% endif %}</td></tr>
+  {% endfor %}</tbody>
+</table></div>
+</section>

@@ -1,0 +1,8 @@
+{% set role = user.role if user else 'guest' %}
+{% set prompt_count = {'guest': 4, 'farmer': 6, 'owner': 6, 'buyer': 3, 'superadmin': 0} %}
+{% if role != 'superadmin' %}
+<button type="button" class="ks-ai-fab" data-ai-fab aria-expanded="false" aria-controls="ks-ai-panel" aria-label="{{ t('ai.open') }}"><i data-lucide="sparkles"></i></button>
+<section id="ks-ai-panel" class="ks-panel ornate ks-ai-panel ks-hidden" data-ai-panel data-auto-open="{{ '1' if ai_auto_open else '0' }}" aria-label="{{ t('ai.title') }}">
+  {% include "partials/_ai_body.html" %}
+</section>
+{% endif %}

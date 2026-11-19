@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% import "partials/_macros.html" as m with context %}
+{% block title %}{{ t('nav.orders') }}{% endblock %}
+{% block content %}
+<div class="ks-between"><h1 class="ks-title ks-h1">{{ t('nav.orders') }}</h1><a class="ks-btn ks-btn-ghost ks-btn-sm" href="/account/statement"><i data-lucide="book-open"></i>{{ t('stmt.mine') }}</a></div>
+{% for row in orders %}{% set o = row.order %}
+<section class="ks-panel ornate mb-4">{{ m.corners() }}
+  <div class="ks-between"><h2 class="ks-title ks-h3 m-0">{{ o.order_no }} · {{ row.shop_name }}</h2>{{ m.status_badge(t, o.status) }}</div>
+  <p class="ks-small ks-muted">{{ o.created_at|dt }} · {{ t('shop.' ~ o.fulfilment) }} · {{ t('pay.' ~ o.payment_method) }}</p>
+  <ul class="ks-list">{% for it in row['items'] %}
+    <li class="ks-between"><span>{{ it.product_name }} × {{ it.qty }} {{ t('unit.' ~ it.unit) }}</span><span>{{ it.line_total|inr }}</span></li>
+    {% if o.status in ('delivered', 'picked_up') and it.product_id not in row.reviewed %}
+    <li><form class="flex flex-wrap gap-2 items-end" data-action-form="review.create" data-payload='{{ {"order_id": o.id|string, "product_id": it.product_id|string}|tojson }}'>
+      <select name="rating" class="ks-select w-28" data-type="int" aria-label="{{ t('shop.rating') }}">{% for s in [5,4,3,2,1] %}<option value="{{ s }}">{{ '★' * s }}</option>{% endfor %}</select>
+      <input name="text" class="ks-input flex-1" maxlength="2000" data-optional placeholder="{{ t('shop.review_placeholder') }}">
+      <button class="ks-btn ks-btn-sm" type="submit">{{ t('shop.review') }}</button></form></li>
+    {% endif %}
+  {% endfor %}</ul>
+  <div class="ks-between mt-2"><span>{{ t('shop.courier') }}: {{ o.courier_charge|inr }}</span><strong>{{ t('shop.total') }}: {{ o.total|inr }}</strong></div>
+  {% if o.cancel_reason %}<p class="ks-small ks-muted">{{ t('shop.cancel_reason') }}: {{ t(o.cancel_reason) }}</p>{% endif %}
+  <details class="mt-2"><summary class="ks-small">{{ t('shop.timeline') }}</summary><ul class="ks-list ks-small">{% for ev in row.events %}<li>{{ ev.created_at|dt }} — {{ t('order.status_name.' ~ ev.status) }}{% if ev.note %} ({{ t(ev.note) }}){% endif %}</li>{% endfor %}</ul></details>
+  {% if o.status in ('placed', 'confirmed') %}<button class="ks-btn ks-btn-ghost ks-btn-sm mt-2" data-action="order.cancel" data-payload='{{ {"order_id": o.id|string}|tojson }}' data-prompt="js.prompt_reason" data-prompt-optional>{{ t('common.cancel') }}</button>{% endif %}
+</section>
+{% else %}{{ m.empty(t('shop.no_orders_buyer'), 'package') }}{% endfor %}
+{% endblock %}

@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="{{ lang }}" dir="{{ dir }}" class="{{ 'dark' if theme == 'dark' else '' }}" data-theme-pref="{{ theme }}" data-lang="{{ lang }}" data-speech="{{ lang_meta.speech }}" data-auth="{{ '1' if user else '0' }}" data-sio="{{ sio_transports }}" data-role="{{ user.role if user else '' }}">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>{% block title %}{{ t('meta.tagline') }}{% endblock %} · {{ APP_NAME }}</title>
+<meta name="description" content="{{ t('meta.description') }}">
+<meta name="csrf-token" content="{{ csrf_token }}">
+{% if user and user.lat is not none and user.lon is not none %}<meta name="ks-home" content="{{ '%.3f'|format(user.lat) }},{{ '%.3f'|format(user.lon) }}">{% endif %}
+<meta name="theme-color" content="#0b3d2c">
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<link rel="manifest" href="/manifest.webmanifest">
+<link rel="icon" href="/static/img/icon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="{{ fonts_href }}">
+{% if tailwind_built() %}
+<link rel="stylesheet" href="{{ asset('tailwind.css') }}" integrity="{{ sri('tailwind.css') }}" crossorigin="anonymous">
+{% else %}
+<script nonce="{{ csp_nonce }}" src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4.1.11"></script>
+<style type="text/tailwindcss">@custom-variant dark (&:where(.dark, .dark *));</style>
+{% endif %}
+<link rel="stylesheet" href="{{ asset('css/theme.css') }}"{% if sri('css/theme.css') %} integrity="{{ sri('css/theme.css') }}" crossorigin="anonymous"{% endif %}>
+<script nonce="{{ csp_nonce }}">(function(){try{var d=document.documentElement;d.classList.add('js');if(d.dataset.themePref==='system'&&window.matchMedia('(prefers-color-scheme: dark)').matches){d.classList.add('dark');}}catch(e){}})();</script>
+{% block head %}{% endblock %}
+</head>
+<body class="ks-body">
+<a href="#main" class="ks-skip">{{ t('a11y.skip') }}</a>
+<div class="ks-sky" aria-hidden="true"><div class="ks-stars"></div><div class="ks-clouds"></div></div>
+<canvas id="ks-particles" aria-hidden="true"></canvas>
+{% include "partials/_nav.html" %}
+{% if TEST_MODE %}<div class="ks-testbar" role="note">{{ t('banner.test_mode') }}</div>{% endif %}
+<main id="main" class="ks-main">
+{% block content %}{% endblock %}
+</main>
+{% include "partials/_footer.html" %}
+{% include "partials/_bottomnav.html" %}
+{% block ai_widget %}{% include "partials/_ai_widget.html" %}{% endblock %}
+{% if not (user and user.is_admin) %}{% include "partials/_guide.html" %}{% endif %}
+<div id="ks-toasts" class="ks-toasts" aria-live="polite"></div>
+<div id="ks-modal-root"></div>
+<script type="application/json" id="ks-i18n">{{ js_i18n|tojson }}</script>
+<script nonce="{{ csp_nonce }}" src="{{ vendor('lucide.min.js', 'https://cdn.jsdelivr.net/npm/lucide@0.460.0/dist/umd/lucide.min.js') }}"></script>
+<script nonce="{{ csp_nonce }}" src="{{ vendor('socket.io.min.js', 'https://cdn.jsdelivr.net/npm/socket.io-client@4.8.1/dist/socket.io.min.js') }}"></script>
+<script nonce="{{ csp_nonce }}" src="{{ asset('js/core.js') }}"{% if sri('js/core.js') %} integrity="{{ sri('js/core.js') }}"{% endif %}></script>
+<script nonce="{{ csp_nonce }}" src="{{ asset('js/guide.js') }}"{% if sri('js/guide.js') %} integrity="{{ sri('js/guide.js') }}"{% endif %}></script>
+<script nonce="{{ csp_nonce }}" src="{{ asset('js/ai.js') }}"{% if sri('js/ai.js') %} integrity="{{ sri('js/ai.js') }}"{% endif %}></script>
+{% block scripts %}{% endblock %}
+</body>
+</html>

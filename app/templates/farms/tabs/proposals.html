@@ -1,0 +1,19 @@
+<p class="ks-muted">{{ t('farm.proposals_help') }}</p>
+{% for p in proposals %}
+<section class="ks-panel ornate mb-4" id="p-{{ p.id }}">{{ m.corners() }}
+  <div class="ks-between"><h2 class="ks-title ks-h3 m-0">{{ t('action.name.' ~ p.action_type) }}</h2>{{ m.status_badge(t, p.status) }}</div>
+  <p class="ks-small ks-muted">{{ p.created_at|dt }}</p>
+  <ul class="ks-list">{% for line in p.summary or [] %}<li>{{ line }}</li>{% endfor %}</ul>
+  {% if p.error %}<div class="ks-alert danger"><i data-lucide="x-circle"></i><div>{{ p.error }}</div></div>{% endif %}
+  <h3 class="ks-h3 mt-3">{{ t('farm.votes') }}</h3>
+  <ul class="ks-list">{% for vid, vname in voters %}{% set v = votes[p.id].get(vid) %}
+    {% if excluded.get(p.id) == vid %}<li class="ks-between"><span>{{ vname }}</span><span class="ks-badge">{{ t('vote.excluded') }}</span></li>
+    {% else %}<li class="ks-between"><span>{{ vname }}</span><span class="ks-badge {{ '' if v == 'approve' else ('danger' if v == 'reject' else 'warn') }}">{{ t('vote.' ~ (v or 'pending')) }}</span></li>{% endif %}{% endfor %}</ul>
+  {% if p.status == 'pending' and perms.vote and user.id not in votes[p.id] and excluded.get(p.id) != user.id %}
+  <div class="ks-row mt-3">
+    <button class="ks-btn" data-vote="{{ p.id }}" data-choice="approve"><i data-lucide="thumbs-up"></i>{{ t('common.approve') }}</button>
+    <button class="ks-btn ks-btn-danger" data-vote="{{ p.id }}" data-choice="reject"><i data-lucide="thumbs-down"></i>{{ t('common.reject') }}</button>
+  </div>
+  {% endif %}
+</section>
+{% else %}{{ m.empty(t('farm.no_proposals'), 'vote') }}{% endfor %}

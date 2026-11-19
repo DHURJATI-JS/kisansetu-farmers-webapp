@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+{% import "partials/_macros.html" as m with context %}
+{% block title %}{{ t('stress.title') }}{% endblock %}
+{% macro ms(v) %}{{ '{:,.0f}'.format(v) if v is not none else '—' }}{% endmacro %}
+{% block content %}
+<h1 class="ks-title ks-h1">{{ t('stress.title') }}</h1>
+<p class="ks-muted max-w-3xl">{{ t('stress.lead') }}</p>
+<div class="viz-root">
+{% if not run %}
+  <section class="ks-panel mt-4">{{ m.empty(t('stress.none'), 'gauge') }}</section>
+{% else %}
+{% set s = summary %}
+<form class="ks-row items-end mt-4 mb-3" method="get">
+  <div class="ks-field m-0 grow max-w-2xl"><label class="ks-label" for="run-pick">{{ t('prodtest.run') }}</label>
+    <select id="run-pick" name="run" class="ks-select">{% for r in runs %}<option value="{{ r.id }}" {% if r.id == run.id %}selected{% endif %}>{{ r.started_at|dt }} · {{ t('prodtest.kind.' ~ r.kind) }} · {{ r.peak_users }} {{ t('prodtest.users') }} · {{ t('prodtest.passed') if r.passed else t('prodtest.failed') }}</option>{% endfor %}</select></div>
+  <button class="ks-btn ks-btn-sm" type="submit"><i data-lucide="refresh-cw"></i>{{ t('prodtest.show') }}</button>
+</form>
+
+<div class="ks-alert {{ 'ok' if run.passed else 'danger' }}" role="status">
+  <i data-lucide="{{ 'badge-check' if run.passed else 'octagon-alert' }}"></i>
+  <div><strong>{{ t('prodtest.verdict_pass') if run.passed else t('prodtest.verdict_fail') }}</strong>
+    <div class="ks-small">{{ t('prodtest.verdict_line', requests='{:,}'.format(s.requests or 0), users=s.peak_users, minutes=(run.duration_s / 60)|round(1),
+      failures='{:,}'.format(s.failures or 0), rate=s.error_rate, five=s.five_xx, ok=s.invariants_passed, total=s.invariants_total) }}</div></div>
+</div>
+
+<div class="ks-grid kpi-grid mt-3">
+  {% for label, value, icon in [
+    (t('prodtest.kpi.requests'), '{:,}'.format(s.requests or 0), 'activity'),
+    (t('prodtest.kpi.users'), s.peak_users, 'users'),
+    (t('prodtest.kpi.peak_rps'), '{:,.0f}'.format(s.peak_rps or 0) ~ ' ' ~ t('prodtest.unit.rps'), 'gauge'),
+    (t('prodtest.kpi.p50'), ms(s.p50) ~ ' ms', 'timer'),
+    (t('prodtest.kpi.p95'), ms(s.p95) ~ ' ms', 'timer-reset'),
+    (t('prodtest.kpi.p99'), ms(s.p99) ~ ' ms', 'hourglass'),
+    (t('prodtest.kpi.errors'), '{:.2f}'.format(s.error_rate or 0) ~ ' %', 'shield-alert'),
+    (t('prodtest.kpi.checks'), (s.invariants_passed or 0) ~ ' / ' ~ (s.invariants_total or 0), 'list-checks'),
+    (t('stress.kpi.workers'), workers, 'server')] %}
+  {{ m.stat(label, value, icon) }}
+  {% endfor %}
+</div>
+
+<h2 class="ks-title ks-h2 mt-6">{{ t('prodtest.sec.load') }}</h2>
+<div class="ks-grid cols-2">
+  <figure class="m-0"><figcaption class="ks-small ks-muted">{{ t('prodtest.chart.users') }}</figcaption>
+    <div class="ks-chart"><canvas id="c-users" role="img" aria-label="{{ t('prodtest.chart.users') }}"></canvas></div></figure>
+  <figure class="m-0"><figcaption class="ks-small ks-muted">{{ t('prodtest.chart.rps') }}</figcaption>
+    <div class="ks-chart"><canvas id="c-rps" role="img" aria-label="{{ t('prodtest.chart.rps') }}"></canvas></div></figure>
+  <figure class="m-0"><figcaption class="ks-small ks-muted">{{ t('prodtest.chart.failures') }}</figcaption>
+    <div class="ks-chart"><canvas id="c-fail" role="img" aria-label="{{ t('prodtest.chart.failures') }}"></canvas></div></figure>
+  <figure class="m-0"><figcaption class="ks-small ks-muted">{{ t('prodtest.chart.latency') }}</figcaption>
+    <div class="ks-chart"><canvas id="c-lat" role="img" aria-label="{{ t('prodtest.chart.latency') }}"></canvas></div></figure>
+</div>
+
+{% if runs|length > 1 %}
+<h2 class="ks-title ks-h2 mt-6">{{ t('prodtest.sec.compare') }}</h2>
+<div class="ks-table-wrap"><table class="ks-table tnum"><thead><tr><th>{{ t('prodtest.col.run') }}</th><th>{{ t('prodtest.col.workers') }}</th>
+  <th>{{ t('prodtest.col.peak_users') }}</th><th>{{ t('prodtest.col.requests') }}</th><th>p50 ms</th><th>p95 ms</th><th>{{ t('prodtest.col.failures') }}</th>
+  <th>{{ t('prodtest.col.checks') }}</th></tr></thead>
+<tbody>{% for r in runs %}{% set rs = r.summary or {} %}<tr>
+  <td><a href="?run={{ r.id }}">{{ r.started_at|dt }} · {{ t('prodtest.kind.' ~ r.kind) }}</a>{% if r.id == run.id %} <span class="ks-badge info">{{ t('prodtest.showing') }}</span>{% endif %}</td>
+  <td>{{ (r.config or {}).get('workers', 1) }}</td><td>{{ r.peak_users }}</td><td>{{ '{:,}'.format(r.total_requests or 0) }}</td><td>{{ ms(rs.get('p50')) }}</td>
+  <td>{{ ms(rs.get('p95')) }}</td><td>{{ '{:,}'.format(r.total_failures or 0) }}</td>
+  <td>{% if r.passed %}<span class="ks-badge"><i data-lucide="circle-check"></i>{{ rs.get('invariants_passed', '—') }} / {{ rs.get('invariants_total', '—') }}</span>{% else %}<span class="ks-badge danger"><i data-lucide="circle-x"></i>{{ rs.get('invariants_passed', '—') }} / {{ rs.get('invariants_total', '—') }}</span>{% endif %}</td></tr>{% endfor %}</tbody></table></div>
+{% endif %}
+
+<h2 class="ks-title ks-h2 mt-6">{{ t('prodtest.sec.checks') }}</h2>
+<p class="ks-small ks-muted">{{ t('stress.checks_help') }}</p>
+<ul class="ks-list">{% for i in checks %}
+  <li class="flex items-start gap-2">{% if i.ok %}<span class="ks-badge"><i data-lucide="circle-check"></i>{{ t('prodtest.pass') }}</span>{% else %}<span class="ks-badge danger"><i data-lucide="circle-x"></i>{{ t('prodtest.fail') }}</span>{% endif %}
+    <span class="min-w-0 break-words" data-translate>{{ i.detail }}</span></li>{% endfor %}</ul>
+
+<h2 class="ks-title ks-h2 mt-6">{{ t('stress.how_title') }}</h2>
+<ul class="ks-list">{% for n in range(1, 5) %}<li>{{ t('stress.how.' ~ n) }}</li>{% endfor %}</ul>
+{% if findings %}<p class="ks-alert info mt-3"><i data-lucide="bug"></i><span>{{ t('stress.findings', n=findings) }}</span></p>{% endif %}
+<p class="ks-small ks-muted mt-3">{{ t('stress.private_note') }}</p>
+<script type="application/json" id="lt-data" nonce="{{ csp_nonce }}">{{ {"timeline": timeline, "duration_s": run.duration_s}|tojson }}</script>
+{% endif %}
+</div>
+{% endblock %}
+{% block scripts %}{% if run %}
+<script nonce="{{ csp_nonce }}" src="{{ vendor('chart.umd.js', 'https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.js') }}" integrity="sha384-dug+JxfBvklEQdJ4AYuBBAIScUz0bVN73xpy273gcAwHjb3qI0fXmuYNaNfdyYJG" crossorigin="anonymous"></script>
+<script nonce="{{ csp_nonce }}" src="{{ asset('js/pages/prodtest.js') }}"{% if sri('js/pages/prodtest.js') %} integrity="{{ sri('js/pages/prodtest.js') }}" crossorigin="anonymous"{% endif %}></script>
+{% endif %}{% endblock %}

@@ -1,0 +1,107 @@
+{% extends "base.html" %}
+{% import "partials/_macros.html" as m with context %}
+{% set ai_auto_open = True %}
+{% block title %}{{ t('signup.title') }}{% endblock %}
+{% block content %}
+<section class="ks-panel ornate max-w-2xl mx-auto mt-4" data-signup>{{ m.corners() }}
+  <div class="ks-steps" aria-hidden="true">{% for i in range(7) %}<span data-step-bar="{{ i }}"></span>{% endfor %}</div>
+  <p class="ks-small ks-muted" data-step-label></p>
+
+  {# ---- 0: language ---- #}
+  <div data-step="0">
+    <div class="ks-between"><h1 class="ks-title ks-h2 m-0">{{ t('signup.s0.title') }}</h1>
+      <button type="button" class="ks-btn ks-btn-ghost ks-btn-sm" data-speak="#v0"><i data-lucide="volume-2"></i>{{ t('common.listen') }}</button></div>
+    <p class="ks-muted" id="v0">{{ t('signup.s0.voice') }}</p>
+    <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+      {% for l in LANGUAGES %}
+      <button type="button" class="ks-tile {{ 'selected' if l.code == lang }}" data-lang-pick="{{ l.code }}" lang="{{ l.code }}"><span class="text-xl">{{ l.native }}</span><span class="ks-small ks-muted">{{ l.name }}</span></button>
+      {% endfor %}
+    </div>
+  </div>
+
+  {# ---- 1: who are you ---- #}
+  <div data-step="1" class="ks-hidden">
+    <div class="ks-between"><h2 class="ks-title ks-h2 m-0">{{ t('signup.s1.title') }}</h2>
+      <button type="button" class="ks-btn ks-btn-ghost ks-btn-sm" data-speak="#v1"><i data-lucide="volume-2"></i>{{ t('common.listen') }}</button></div>
+    <p class="ks-muted" id="v1">{{ t('signup.s1.voice') }}</p>
+    <div class="ks-grid cols-3">
+      {% for role, icon in [('farmer','sprout'), ('owner','tractor'), ('buyer','shopping-basket')] %}
+      <button type="button" class="ks-tile" data-role-pick="{{ role }}"><i data-lucide="{{ icon }}"></i><span>{{ t('role.' ~ role) }}</span><span class="ks-small ks-muted">{{ t('signup.role_desc.' ~ role) }}</span></button>
+      {% endfor %}
+    </div>
+  </div>
+
+  {# ---- 2: phone + OTP ---- #}
+  <div data-step="2" class="ks-hidden">
+    <div class="ks-between"><h2 class="ks-title ks-h2 m-0">{{ t('signup.s2.title') }}</h2>
+      <button type="button" class="ks-btn ks-btn-ghost ks-btn-sm" data-speak="#v2"><i data-lucide="volume-2"></i>{{ t('common.listen') }}</button></div>
+    <p class="ks-muted" id="v2">{{ t('signup.s2.voice') }}</p>
+    {{ m.field('phone', t('field.phone'), type='tel', required=True, attrs='inputmode="tel" autocomplete="tel" maxlength="16"', placeholder='98765 43210', id='su-phone') }}
+    <button type="button" class="ks-btn" data-send-otp><i data-lucide="message-square"></i>{{ t('signup.send_otp') }}</button>
+    <div data-test-code class="ks-alert warn mt-3 ks-hidden" role="status"></div>
+    <div data-otp-wrap class="ks-hidden mt-4">
+      <label class="ks-label" for="su-otp">{{ t('field.otp') }}</label>
+      <input id="su-otp" class="ks-input text-2xl tracking-[.5em] text-center" inputmode="numeric" autocomplete="one-time-code" maxlength="6" pattern="[0-9]{6}">
+    </div>
+  </div>
+
+  {# ---- 3: about you ---- #}
+  <div data-step="3" class="ks-hidden">
+    <div class="ks-between"><h2 class="ks-title ks-h2 m-0">{{ t('signup.s3.title') }}</h2>
+      <button type="button" class="ks-btn ks-btn-ghost ks-btn-sm" data-speak="#v3"><i data-lucide="volume-2"></i>{{ t('common.listen') }}</button></div>
+    <p class="ks-muted" id="v3">{{ t('signup.s3.voice') }}</p>
+    <div class="ks-field">
+      <label class="ks-label" for="su-name">{{ t('field.full_name') }}</label>
+      <div class="flex gap-2"><input id="su-name" class="ks-input" maxlength="120" autocomplete="name"><button type="button" class="ks-icon-btn" data-mic="#su-name" aria-label="{{ t('ai.mic') }}"><i data-lucide="mic"></i></button></div>
+    </div>
+    <div data-dob-wrap>{{ m.field('dob', t('field.dob'), type='date', id='su-dob', help=t('help.dob_18')) }}</div>
+    <div data-email-wrap class="ks-hidden">{{ m.field('email', t('field.email'), type='email', id='su-email', attrs='autocomplete="email" maxlength="254"', help=t('help.email_owner')) }}</div>
+  </div>
+
+  {# ---- 4: PIN / password ---- #}
+  <div data-step="4" class="ks-hidden">
+    <div class="ks-between"><h2 class="ks-title ks-h2 m-0">{{ t('signup.s4.title') }}</h2>
+      <button type="button" class="ks-btn ks-btn-ghost ks-btn-sm" data-speak="#v4"><i data-lucide="volume-2"></i>{{ t('common.listen') }}</button></div>
+    <p class="ks-muted" id="v4" data-voice-pin>{{ t('signup.s4.voice_pin') }}</p>
+    <p class="ks-muted ks-hidden" data-voice-pass>{{ t('signup.s4.voice_pass') }}</p>
+    <div data-pin-wrap>
+      <input id="su-pin" class="ks-input text-3xl tracking-[.6em] text-center mb-3" type="password" inputmode="numeric" maxlength="8" autocomplete="new-password" aria-label="{{ t('field.pin') }}">
+      <div class="ks-keypad">{% for k in ['1','2','3','4','5','6','7','8','9','⌫','0','✓'] %}<button type="button" data-key="{{ k }}">{{ k }}</button>{% endfor %}</div>
+    </div>
+    <div data-pass-wrap class="ks-hidden">
+      {{ m.field('password', t('field.password'), type='password', id='su-pass', attrs='autocomplete="new-password" maxlength="128"', help=t('help.password_strong')) }}
+      {{ m.field('password2', t('field.password_again'), type='password', id='su-pass2', attrs='autocomplete="new-password" maxlength="128"') }}
+    </div>
+  </div>
+
+  {# ---- 5: location ---- #}
+  <div data-step="5" class="ks-hidden">
+    <div class="ks-between"><h2 class="ks-title ks-h2 m-0">{{ t('signup.s5.title') }}</h2>
+      <button type="button" class="ks-btn ks-btn-ghost ks-btn-sm" data-speak="#v5"><i data-lucide="volume-2"></i>{{ t('common.listen') }}</button></div>
+    <p class="ks-muted" id="v5">{{ t('signup.s5.voice') }}</p>
+    <button type="button" class="ks-btn ks-btn-xl ks-btn-gold w-full" data-get-location><i data-lucide="map-pin"></i>{{ t('signup.share_location') }}</button>
+    <button type="button" class="ks-btn ks-btn-ghost w-full mt-2" data-loc-typed-toggle="#su-typed"><i data-lucide="keyboard"></i>{{ t('loc.type_instead') }}</button>
+    {{ m.typed_location('su-typed') }}
+    <div data-location-result class="ks-alert ok mt-3 ks-hidden" role="status" aria-live="polite"></div>
+  </div>
+
+  {# ---- 6: terms ---- #}
+  <div data-step="6" class="ks-hidden">
+    <div class="ks-between"><h2 class="ks-title ks-h2 m-0">{{ t('signup.s6.title') }}</h2>
+      <button type="button" class="ks-btn ks-btn-ghost ks-btn-sm" data-speak="#terms-summary"><i data-lucide="volume-2"></i>{{ t('common.listen') }}</button></div>
+    <ul class="ks-list" id="terms-summary">
+      {% for i in range(1, 7) %}<li>{{ t('signup.terms.' ~ i) }}</li>{% endfor %}
+    </ul>
+    <label class="ks-check mt-3"><input type="checkbox" id="su-terms"><span>{{ t('signup.accept_terms') }} <a href="/legal/terms" target="_blank" rel="noopener">{{ t('legal.terms.title') }}</a></span></label>
+    <label class="ks-check mt-2"><input type="checkbox" id="su-privacy"><span>{{ t('signup.accept_privacy') }} <a href="/legal/privacy" target="_blank" rel="noopener">{{ t('legal.privacy.title') }}</a></span></label>
+  </div>
+
+  <div class="ks-between mt-6">
+    <button type="button" class="ks-btn ks-btn-ghost" data-prev><i data-lucide="arrow-left"></i>{{ t('common.back') }}</button>
+    <button type="button" class="ks-btn ks-btn-xl" data-next>{{ t('common.next') }}<i data-lucide="arrow-right"></i></button>
+    <button type="button" class="ks-btn ks-btn-go ks-btn-xl ks-hidden" data-submit><i data-lucide="sparkles"></i>{{ t('signup.create') }}</button>
+  </div>
+  <p class="ks-small ks-muted mt-3">{{ t('signup.have_account') }} <a href="/login">{{ t('nav.login') }}</a></p>
+</section>
+{% endblock %}
+{% block scripts %}<script nonce="{{ csp_nonce }}" src="{{ asset('js/pages/auth.js') }}"></script>{% endblock %}

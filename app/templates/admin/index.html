@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% import "partials/_macros.html" as m with context %}
+{% block title %}{{ t('nav.admin') }}{% endblock %}
+{% block ai_widget %}{% endblock %}
+{% block content %}
+<div class="ks-between"><h1 class="ks-title ks-h1 m-0">{{ t('admin.title') }}</h1><span class="ks-badge gold"><i data-lucide="shield-check"></i>{{ t('admin.mfa_ok') }}</span></div>
+{% include "admin/_nav.html" %}
+{% if tab in ('farms', 'users') %}
+<form class="ks-row mb-3" method="get"><input type="hidden" name="tab" value="{{ tab }}"><input class="ks-input max-w-sm" name="q" value="{{ q }}" maxlength="80" placeholder="{{ t('admin.search') }}" aria-label="{{ t('admin.search') }}"><button class="ks-btn" type="submit"><i data-lucide="search"></i></button></form>
+{% endif %}
+{% include "admin/tabs/" ~ tab ~ ".html" %}
+{% endblock %}
+{% block scripts %}<script nonce="{{ csp_nonce }}" src="{{ asset('js/pages/admin.js') }}"></script>{% endblock %}
